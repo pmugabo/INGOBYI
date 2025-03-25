@@ -1,0 +1,23 @@
+{
+  "name": "ingobyi",
+  "version": "1.0.0",
+  "description": "Ingobyi Emergency Management System",
+  "main": "index.js",
+  "scripts": {
+    "start": "cd server && npm start",
+    "client": "cd client && npm start",
+    "dev": "concurrently \"npm run start\" \"npm run client\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "emergency",
+    "management",
+    "ambulance",
+    "healthcare"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^8.0.1"
+  }
+}
