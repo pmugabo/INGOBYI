@@ -1,255 +1,182 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeEmergencies: 0,
-    availableDrivers: 0,
-    totalHospitals: 0,
-    totalEMTs: 0,
-    totalResponses: 0
-  });
-  const [recentEmergencies, setRecentEmergencies] = useState([]);
-  const [userManagement, setUserManagement] = useState([]);
-  const { user } = useAuth();
+  const [users, setUsers] = useState([]);
+  const [emergencyStats, setEmergencyStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedTab, setSelectedTab] = useState('users');
 
   useEffect(() => {
-    fetchStats();
-    fetchRecentEmergencies();
     fetchUsers();
-
-    // Set up real-time updates
-    const socket = new WebSocket('ws://localhost:8080');
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'STATS_UPDATE') {
-        setStats(prev => ({ ...prev, ...data.stats }));
-      } else if (data.type === 'NEW_EMERGENCY') {
-        setRecentEmergencies(prev => [data.emergency, ...prev.slice(0, 9)]);
-      }
-    };
-
-    return () => {
-      socket.close();
-    };
+    fetchEmergencyStats();
   }, []);
-
-  const fetchStats = async () => {
-    try {
-      const response = await fetch('/api/admin/stats', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setStats(data);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
-  };
-
-  const fetchRecentEmergencies = async () => {
-    try {
-      const response = await fetch('/api/admin/recent-emergencies', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setRecentEmergencies(data);
-    } catch (error) {
-      console.error('Error fetching recent emergencies:', error);
-    }
-  };
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/admin/users', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setUserManagement(data);
+      const response = await axios.get('/api/admin/users');
+      setUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
     }
   };
 
-  const handleUserStatusChange = async (userId, newStatus) => {
+  const fetchEmergencyStats = async () => {
     try {
-      await fetch(`/api/admin/users/${userId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      fetchUsers();
+      const response = await axios.get('/api/admin/emergency-stats');
+      setEmergencyStats(response.data);
+    } catch (error) {
+      console.error('Error fetching emergency stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUserStatusUpdate = async (userId, isActive) => {
+    try {
+      await axios.put(`/api/admin/users/${userId}`, { isActive });
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          user.id === userId ? { ...user, isActive } : user
+        )
+      );
     } catch (error) {
       console.error('Error updating user status:', error);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">System Overview</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Users</p>
-              <p className="text-2xl font-bold text-blue-600">{stats.totalUsers}</p>
+    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <div className="px-4 py-6 sm:px-0">
+        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+
+        {/* Stats Overview */}
+        {!loading && emergencyStats && (
+          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <dt className="text-sm font-medium text-gray-500 truncate">
+                  Total Emergency Requests
+                </dt>
+                <dd className="mt-1 text-3xl font-semibold text-gray-900">
+                  {emergencyStats.totalRequests}
+                </dd>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Active Emergencies</p>
-              <p className="text-2xl font-bold text-red-600">{stats.activeEmergencies}</p>
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <dt className="text-sm font-medium text-gray-500 truncate">
+                  Active Drivers
+                </dt>
+                <dd className="mt-1 text-3xl font-semibold text-gray-900">
+                  {emergencyStats.activeDrivers}
+                </dd>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Available Drivers</p>
-              <p className="text-2xl font-bold text-green-600">{stats.availableDrivers}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Hospitals</p>
-              <p className="text-2xl font-bold text-purple-600">{stats.totalHospitals}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Active EMTs</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.totalEMTs}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Responses</p>
-              <p className="text-2xl font-bold text-indigo-600">{stats.totalResponses}</p>
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <dt className="text-sm font-medium text-gray-500 truncate">
+                  Average Response Time
+                </dt>
+                <dd className="mt-1 text-3xl font-semibold text-gray-900">
+                  {emergencyStats.avgResponseTime} min
+                </dd>
+              </div>
             </div>
           </div>
+        )}
+
+        {/* Tab Navigation */}
+        <div className="mt-8 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setSelectedTab('users')}
+              className={`${
+                selectedTab === 'users'
+                  ? 'border-[#004F98] text-[#004F98]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              Users
+            </button>
+            <button
+              onClick={() => setSelectedTab('analytics')}
+              className={`${
+                selectedTab === 'analytics'
+                  ? 'border-[#004F98] text-[#004F98]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              Analytics
+            </button>
+          </nav>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 md:col-span-2">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Recent Emergencies</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead>
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Time
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {recentEmergencies.map((emergency) => (
-                  <tr key={emergency.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {new Date(emergency.timestamp).toLocaleTimeString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {emergency.type}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {emergency.location}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          emergency.status === 'completed'
-                            ? 'bg-green-100 text-green-800'
-                            : emergency.status === 'in-progress'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {emergency.status}
-                      </span>
-                    </td>
-                  </tr>
+        {/* Users List */}
+        {selectedTab === 'users' && (
+          <div className="mt-8">
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <ul className="divide-y divide-gray-200">
+                {users.map((user) => (
+                  <li key={user.id}>
+                    <div className="px-4 py-4 sm:px-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                              <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                <span className="text-xl text-gray-600">
+                                  {user.fullName[0]}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <h3 className="text-sm font-medium text-gray-900">
+                                {user.fullName}
+                              </h3>
+                              <p className="text-sm text-gray-500">
+                                {user.email}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                Role: {user.role}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="ml-4 flex-shrink-0">
+                          <button
+                            onClick={() => handleUserStatusUpdate(user.id, !user.isActive)}
+                            className={`${
+                              user.isActive
+                                ? 'bg-[#004F98] hover:bg-[#003A6D]'
+                                : 'bg-green-600 hover:bg-green-700'
+                            } text-white px-3 py-1 rounded-md text-sm`}
+                          >
+                            {user.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* User Management */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">User Management</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead>
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {userManagement.map((user) => (
-                <tr key={user.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {user.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {user.role}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {user.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() =>
-                        handleUserStatusChange(
-                          user.id,
-                          user.status === 'active' ? 'inactive' : 'active'
-                        )
-                      }
-                      className={`text-sm font-medium ${
-                        user.status === 'active'
-                          ? 'text-red-600 hover:text-red-900'
-                          : 'text-green-600 hover:text-green-900'
-                      }`}
-                    >
-                      {user.status === 'active' ? 'Deactivate' : 'Activate'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Analytics */}
+        {selectedTab === 'analytics' && (
+          <div className="mt-8">
+            <div className="bg-white shadow sm:rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  Emergency Response Analytics
+                </h3>
+                {/* Add charts and analytics here */}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
