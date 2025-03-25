@@ -1,118 +1,77 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
-import Layout from './components/Layout';
-import Home from './pages/HomePage';
-import About from './pages/About';
-import Services from './pages/Services';
-import Help from './pages/Help';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import EmergencyRequest from './pages/EmergencyRequest';
-import PatientDashboard from './pages/PatientDashboard';
-import DriverDashboard from './pages/DriverDashboard';
-import HospitalDashboard from './pages/HospitalDashboard';
-import EMTDashboard from './pages/EMTDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import InsuranceDashboard from './pages/InsuranceDashboard';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import EmergencyRequest from './components/EmergencyRequest';
+import EmergencyTracking from './components/EmergencyTracking';
+import DriverDashboard from './components/DriverDashboard';
+import InsuranceDashboard from './components/InsuranceDashboard';
+import Login from './components/Login';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+const PrivateRoute = ({ children, roles }) => {
   const { user } = useAuth();
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" />;
   }
 
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    switch (user.role) {
-      case 'patient':
-        return <Navigate to="/dashboard/patient" replace />;
-      case 'driver':
-        return <Navigate to="/dashboard/driver" replace />;
-      case 'hospital':
-        return <Navigate to="/dashboard/hospital" replace />;
-      case 'emt':
-        return <Navigate to="/dashboard/emt" replace />;
-      case 'admin':
-        return <Navigate to="/dashboard/admin" replace />;
-      case 'insurance':
-        return <Navigate to="/dashboard/insurance" replace />;
-      default:
-        return <Navigate to="/" replace />;
-    }
+  if (roles && !roles.includes(user.role)) {
+    return <Navigate to="/" />;
   }
 
   return children;
 };
 
-function App() {
+const App = () => {
   return (
-    <Layout>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/services" element={<Services />} />
-        <Route path="/help" element={<Help />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/emergency" element={<EmergencyRequest />} />
+    <AuthProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-50">
+          <nav className="bg-white shadow-sm">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="flex justify-between h-16">
+                <div className="flex">
+                  <div className="flex-shrink-0 flex items-center">
+                    <img
+                      className="h-8 w-auto"
+                      src="/logo.png"
+                      alt="Ingobyi"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </nav>
 
-        {/* Protected Routes */}
-        <Route
-          path="/dashboard/patient"
-          element={
-            <ProtectedRoute allowedRoles={['patient']}>
-              <PatientDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/driver"
-          element={
-            <ProtectedRoute allowedRoles={['driver']}>
-              <DriverDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/hospital"
-          element={
-            <ProtectedRoute allowedRoles={['hospital']}>
-              <HospitalDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/emt"
-          element={
-            <ProtectedRoute allowedRoles={['emt']}>
-              <EMTDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/admin"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/insurance"
-          element={
-            <ProtectedRoute allowedRoles={['insurance']}>
-              <InsuranceDashboard />
-            </ProtectedRoute>
-          }
-        />
+          <main className="py-6">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<EmergencyRequest />} />
+              <Route path="/track/:requestId" element={<EmergencyTracking />} />
 
-        {/* Fallback Route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Layout>
+              {/* Protected Routes */}
+              <Route
+                path="/driver"
+                element={
+                  <PrivateRoute roles={['driver']}>
+                    <DriverDashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/insurance"
+                element={
+                  <PrivateRoute roles={['insurance']}>
+                    <InsuranceDashboard />
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
+          </main>
+        </div>
+      </Router>
+    </AuthProvider>
   );
-}
+};
 
 export default App;
