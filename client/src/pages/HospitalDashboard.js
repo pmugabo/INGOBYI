@@ -1,267 +1,117 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 
 const HospitalDashboard = () => {
   const [incomingPatients, setIncomingPatients] = useState([]);
-  const [admittedPatients, setAdmittedPatients] = useState([]);
-  const [resources, setResources] = useState({
-    beds: { total: 0, available: 0 },
-    icu: { total: 0, available: 0 },
-    ambulances: { total: 0, available: 0 }
-  });
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
     fetchIncomingPatients();
-    fetchAdmittedPatients();
-    fetchResources();
-
-    // Set up real-time updates
-    const socket = new WebSocket('ws://localhost:8080');
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'NEW_INCOMING_PATIENT') {
-        setIncomingPatients(prev => [...prev, data.patient]);
-      }
-    };
-
-    return () => {
-      socket.close();
-    };
+    // Set up real-time updates with Socket.IO
+    // TODO: Implement Socket.IO connection
   }, []);
 
   const fetchIncomingPatients = async () => {
     try {
-      const response = await fetch('/api/hospital/incoming-patients', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setIncomingPatients(data);
+      const response = await axios.get('/api/hospital/incoming-patients');
+      setIncomingPatients(response.data);
     } catch (error) {
       console.error('Error fetching incoming patients:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchAdmittedPatients = async () => {
+  const handleAdmissionConfirm = async (patientId) => {
     try {
-      const response = await fetch('/api/hospital/admitted-patients', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setAdmittedPatients(data);
+      await axios.post(`/api/hospital/confirm-admission/${patientId}`);
+      // Update the local state to reflect the change
+      setIncomingPatients(prevPatients =>
+        prevPatients.map(patient =>
+          patient.id === patientId
+            ? { ...patient, status: 'admitted' }
+            : patient
+        )
+      );
     } catch (error) {
-      console.error('Error fetching admitted patients:', error);
-    }
-  };
-
-  const fetchResources = async () => {
-    try {
-      const response = await fetch('/api/hospital/resources', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setResources(data);
-    } catch (error) {
-      console.error('Error fetching resources:', error);
-    }
-  };
-
-  const handlePatientAdmission = async (patientId) => {
-    try {
-      await fetch(`/api/hospital/admit-patient/${patientId}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      // Update lists
-      setIncomingPatients(prev => prev.filter(p => p.id !== patientId));
-      fetchAdmittedPatients();
-      fetchResources();
-    } catch (error) {
-      console.error('Error admitting patient:', error);
-    }
-  };
-
-  const handlePatientDischarge = async (patientId) => {
-    try {
-      await fetch(`/api/hospital/discharge-patient/${patientId}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      // Update lists
-      setAdmittedPatients(prev => prev.filter(p => p.id !== patientId));
-      fetchResources();
-    } catch (error) {
-      console.error('Error discharging patient:', error);
+      console.error('Error confirming admission:', error);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Resource Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Hospital Beds</h3>
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-3xl font-bold text-blue-600">{resources.beds.available}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Available</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-gray-600 dark:text-gray-400">{resources.beds.total}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
-            </div>
-          </div>
+    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <div className="px-4 py-6 sm:px-0">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">Hospital Dashboard</h1>
+          <span className="text-sm text-gray-500">
+            Hospital: {user?.hospitalName}
+          </span>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">ICU Units</h3>
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-3xl font-bold text-blue-600">{resources.icu.available}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Available</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-gray-600 dark:text-gray-400">{resources.icu.total}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Ambulances</h3>
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-3xl font-bold text-blue-600">{resources.ambulances.available}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Available</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-gray-600 dark:text-gray-400">{resources.ambulances.total}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Incoming Patients */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-        <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Incoming Patients</h2>
-        {incomingPatients.length === 0 ? (
-          <p className="text-gray-600 dark:text-gray-400">No incoming patients</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead>
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Patient Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Emergency Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    ETA
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+        {/* Incoming Patients */}
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Incoming Patients</h2>
+          
+          {loading ? (
+            <div className="text-center py-4">Loading...</div>
+          ) : incomingPatients.length === 0 ? (
+            <div className="text-center py-4 text-gray-500">No incoming patients</div>
+          ) : (
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <ul className="divide-y divide-gray-200">
                 {incomingPatients.map((patient) => (
-                  <tr key={patient.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">
-                      {patient.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">
-                      {patient.emergencyType}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">
-                      {patient.eta} mins
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => handlePatientAdmission(patient.id)}
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${patient.status === 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white'}`}
-                      >
-                        Admit
-                      </button>
-                    </td>
-                  </tr>
+                  <li key={patient.id}>
+                    <div className="px-4 py-4 sm:px-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-[#004F98] truncate">
+                              {patient.fullName}
+                            </p>
+                            <div className="ml-2 flex-shrink-0 flex">
+                              <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${patient.status === 'en_route' ? 'bg-yellow-100 text-yellow-800' : 
+                                  patient.status === 'arriving' ? 'bg-green-100 text-green-800' : 
+                                  'bg-gray-100 text-gray-800'}`}>
+                                {patient.status}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="mt-2 flex justify-between">
+                            <div>
+                              <p className="text-sm text-gray-500">
+                                Condition: {patient.condition}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                ETA: {patient.estimatedArrival}
+                              </p>
+                            </div>
+                            {patient.status === 'arriving' && (
+                              <button
+                                onClick={() => handleAdmissionConfirm(patient.id)}
+                                className="ml-4 inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-[#004F98] hover:bg-[#003d7a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004F98]"
+                              >
+                                Confirm Admission
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              </ul>
+            </div>
+          )}
+        </div>
 
-      {/* Admitted Patients */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Admitted Patients</h2>
-        {admittedPatients.length === 0 ? (
-          <p className="text-gray-600 dark:text-gray-400">No admitted patients</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead>
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Patient Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Room
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Admission Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {admittedPatients.map((patient) => (
-                  <tr key={patient.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">
-                      {patient.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">
-                      {patient.room}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">
-                      {new Date(patient.admissionDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">
-                      {patient.status}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => handlePatientDischarge(patient.id)}
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${patient.status === 'discharged' ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}
-                      >
-                        Discharge
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {/* Recent Admissions */}
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Admissions</h2>
+          {/* Add recent admissions list here */}
+        </div>
       </div>
     </div>
   );
