@@ -7,7 +7,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
           <div className="space-y-8 xl:col-span-1">
-            <h2 className="text-2xl font-bold text-white">Ingobyi</h2>
+            <h2 className="text-2xl font-bold text-white">INGOBYI</h2>
             <p className="text-gray-300 text-base">
               Revolutionizing emergency medical response with cutting-edge technology and a commitment to saving lives.
             </p>
@@ -119,7 +119,7 @@ const Footer = () => {
         </div>
         <div className="mt-12 border-t border-gray-700 pt-8">
           <p className="text-base text-gray-300 xl:text-center">
-            &copy; {new Date().getFullYear()} Ingobyi. All rights reserved.
+            &copy; {new Date().getFullYear()} INGOBYI. All rights reserved.
           </p>
         </div>
       </div>

@@ -22,8 +22,8 @@ const About = () => {
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="mt-3 sm:mt-0 sm:ml-3">
                     <Link
-                      to="/contact"
-                      className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-[#004F98] bg-[#e6f0f9] hover:bg-[#cce1f3] md:py-4 md:text-lg md:px-10"
+                      to="/help#contact"
+                      className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-ingobyi-blue-500 hover:bg-ingobyi-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ingobyi-blue-500"
                     >
                       Contact Us
                     </Link>

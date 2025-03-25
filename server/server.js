@@ -1,55 +1,59 @@
 require('dotenv').config();
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
-const mockDb = require('./services/mockDb');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const User = require('./models/User');
 
 const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true
 }));
 app.use(express.json());
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  next();
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/ingobyi', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => {
+  console.log('Connected to MongoDB successfully');
+})
+.catch((error) => {
+  console.error('MongoDB connection error:', error);
 });
 
-// JWT Authentication middleware
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET || 'ingobyi-emergency-system-secret-key-change-in-production', (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Invalid or expired token' });
-    }
-    req.user = user;
-    next();
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    message: 'Ingobyi Emergency System API is running',
+    timestamp: new Date().toISOString()
   });
-};
+});
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`, req.body);
+  next();
+});
 
 // Authentication routes
 app.post('/api/auth/register', async (req, res) => {
   try {
+    console.log('Registration request:', req.body);
     const {
-      fullName,
+      firstName,
+      lastName,
       email,
       password,
       phone,
-      role,
       nationalId,
-      insuranceProvider,
-      insuranceNumber
+      role
     } = req.body;
 
     if (!email || !password) {
@@ -57,115 +61,150 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Check if user exists
-    const existingUser = mockDb.findUserByEmail(email);
+    const existingUser = await User.findOne({ 
+      $or: [
+        { email },
+        { nationalId },
+        { phone }
+      ]
+    });
+
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists with this email' });
+      if (existingUser.email === email) {
+        return res.status(400).json({ message: 'User already exists with this email' });
+      }
+      if (existingUser.nationalId === nationalId) {
+        return res.status(400).json({ message: 'User already exists with this National ID' });
+      }
+      if (existingUser.phone === phone) {
+        return res.status(400).json({ message: 'User already exists with this phone number' });
+      }
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user with role-specific details
-    const userData = {
-      name: fullName,
+    // Create new user - password will be hashed by the User model middleware
+    const user = new User({
+      firstName,
+      lastName,
       email,
-      password: hashedPassword,
+      password,
       phone,
+      nationalId,
       role
-    };
+    });
 
-    // Add patient-specific details
-    if (role === 'patient') {
-      userData.patientDetails = {
-        nationalId,
-        insuranceProvider,
-        insuranceNumber,
-        coverageDetails: 'Basic',
-        lastVerificationDate: new Date(),
-        paymentStatus: 'Pending'
-      };
+    console.log('Saving user:', { 
+      firstName, 
+      lastName, 
+      email, 
+      phone, 
+      nationalId,
+      role
+    });
 
-      // Create insurance record
-      mockDb.createInsuranceRecord({
-        userId: userData.id,
-        provider: insuranceProvider,
-        insuranceNumber,
-        nationalId,
-        coverageType: 'Basic'
-      });
-    }
+    await user.save();
+    console.log('User saved successfully');
 
-    // Create user
-    const user = mockDb.createUser(userData);
-
-    // Generate token
+    // Generate JWT token with role
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { 
+        userId: user._id,
+        role: user.role
+      },
       process.env.JWT_SECRET || 'ingobyi-emergency-system-secret-key-change-in-production',
       { expiresIn: '24h' }
     );
 
+    // Get dashboard route based on role
+    const dashboardRoutes = {
+      patient: '/patient-dashboard',
+      emt: '/emt-dashboard',
+      driver: '/driver-dashboard',
+      hospital_staff: '/hospital-dashboard',
+      insurance_provider: '/insurance-dashboard'
+    };
+
     res.status(201).json({
+      message: 'User registered successfully',
       token,
       user: {
-        id: user.id,
-        name: user.name,
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
-        role: user.role,
         phone: user.phone,
-        patientDetails: user.patientDetails
-      }
+        role: user.role
+      },
+      redirectTo: dashboardRoutes[user.role] || '/dashboard'
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Error creating account', error: error.message });
+    res.status(500).json({ message: 'Failed to create account', error: error.message });
   }
 });
 
+// Login route
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    console.log('Login attempt:', { email });
+    const { identifier, password, role } = req.body;
+    console.log('Login attempt:', { identifier, role });
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
-
-    // Find user
-    const user = mockDb.findUserByEmail(email);
-    console.log('User found:', user ? 'yes' : 'no');
+    // Find user by email or phone
+    const user = await User.findOne({
+      $or: [
+        { email: identifier },
+        { phone: identifier }
+      ]
+    });
 
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      console.log('User not found');
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    // Verify role matches
+    if (user.role !== role) {
+      console.log('Role mismatch:', { expected: role, actual: user.role });
+      return res.status(401).json({ message: 'Invalid role for this user' });
+    }
+
+    // Compare password
+    const isValidPassword = await user.comparePassword(password);
     console.log('Password valid:', isValidPassword);
 
     if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate token
+    // Generate token with role
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { 
+        userId: user._id,
+        role: user.role 
+      },
       process.env.JWT_SECRET || 'ingobyi-emergency-system-secret-key-change-in-production',
       { expiresIn: '24h' }
     );
 
-    console.log('Login successful, sending response');
+    // Get dashboard route based on role
+    const dashboardRoutes = {
+      patient: '/patient-dashboard',
+      emt: '/emt-dashboard',
+      driver: '/driver-dashboard',
+      hospital_staff: '/hospital-dashboard',
+      insurance_provider: '/insurance-dashboard'
+    };
 
     res.json({
       token,
       user: {
-        id: user.id,
-        name: user.name,
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
-        role: user.role,
         phone: user.phone,
-        patientDetails: user.patientDetails
-      }
+        role: user.role
+      },
+      redirectTo: dashboardRoutes[user.role] || '/dashboard'
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -173,52 +212,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Protected route for user profile
-app.get('/api/auth/profile', authenticateToken, (req, res) => {
-  try {
-    const user = mockDb.findUserById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      phone: user.phone,
-      patientDetails: user.patientDetails
-    });
-  } catch (error) {
-    console.error('Profile fetch error:', error);
-    res.status(500).json({ message: 'Error fetching profile', error: error.message });
-  }
-});
-
-// Insurance verification endpoint
-app.post('/api/insurance/verify', authenticateToken, async (req, res) => {
-  try {
-    const { userId } = req.body;
-    const verificationResult = mockDb.verifyInsurance(userId);
-    
-    if (!verificationResult) {
-      return res.status(404).json({ message: 'Insurance record not found' });
-    }
-
-    res.json(verificationResult);
-  } catch (error) {
-    console.error('Insurance verification error:', error);
-    res.status(500).json({ message: 'Error verifying insurance', error: error.message });
-  }
-});
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Ingobyi Emergency System API is running' });
-});
-
-const PORT = process.env.PORT || 5002;
-
+const PORT = process.env.PORT || 5003;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });

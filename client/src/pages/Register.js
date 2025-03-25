@@ -4,18 +4,28 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    fullName: '',
-    nationalId: '',
-    insuranceProvider: '',
-    password: '',
+    firstName: '',
+    lastName: '',
     email: '',
+    password: '',
+    confirmPassword: '',
     phone: '',
-    confirmPassword: ''
+    nationalId: '',
+    role: 'patient' // Default role
   });
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { register } = useAuth();
+
+  const roles = [
+    { value: 'patient', label: 'Patient' },
+    { value: 'emt', label: 'EMT' },
+    { value: 'driver', label: 'Driver' },
+    { value: 'hospital_staff', label: 'Hospital Staff' },
+    { value: 'insurance_provider', label: 'Insurance Provider' }
+  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,197 +35,201 @@ const Register = () => {
       return setError('Passwords do not match');
     }
 
-    setLoading(true);
-
     try {
-      await register(formData);
-      navigate('/dashboard');
+      setLoading(true);
+      const response = await register(formData); // Get the response from register
+      console.log('Registration response:', response); // Add logging
+      
+      // Navigate to the redirect URL from the response
+      if (response.redirectTo) {
+        navigate(response.redirectTo);
+      } else {
+        // Fallback to role-based dashboard routes
+        const dashboardRoutes = {
+          patient: '/patient-dashboard',
+          emt: '/emt-dashboard',
+          driver: '/driver-dashboard',
+          hospital_staff: '/hospital-dashboard',
+          insurance_provider: '/insurance-dashboard'
+        };
+        navigate(dashboardRoutes[formData.role] || '/dashboard');
+      }
     } catch (err) {
-      setError('Failed to create an account');
+      console.error('Registration error:', err);
+      setError(err.response?.data?.message || 'Failed to create an account');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [e.target.name]: e.target.value
-    });
+    }));
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Create your account
         </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Or{' '}
+          <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            sign in to your account
+          </Link>
+        </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {error && (
-            <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded relative" role="alert">
               <span className="block sm:inline">{error}</span>
             </div>
           )}
 
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Full Name */}
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                Full Name
-              </label>
-              <div className="mt-1">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                  First Name
+                </label>
                 <input
-                  id="fullName"
-                  name="fullName"
+                  id="firstName"
+                  name="firstName"
                   type="text"
                   required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#004F98] focus:border-[#004F98] sm:text-sm"
-                  value={formData.fullName}
+                  value={formData.firstName}
                   onChange={handleChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                  Last Name
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  required
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
               </div>
             </div>
 
-            {/* National ID/Passport */}
-            <div>
-              <label htmlFor="nationalId" className="block text-sm font-medium text-gray-700">
-                National ID/Passport
-              </label>
-              <div className="mt-1">
-                <input
-                  id="nationalId"
-                  name="nationalId"
-                  type="text"
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#004F98] focus:border-[#004F98] sm:text-sm"
-                  value={formData.nationalId}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            {/* Insurance Provider */}
-            <div>
-              <label htmlFor="insuranceProvider" className="block text-sm font-medium text-gray-700">
-                Insurance Provider
-              </label>
-              <div className="mt-1">
-                <select
-                  id="insuranceProvider"
-                  name="insuranceProvider"
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#004F98] focus:border-[#004F98] sm:text-sm"
-                  value={formData.insuranceProvider}
-                  onChange={handleChange}
-                >
-                  <option value="">Select Insurance Provider</option>
-                  <option value="Mutuelle de Santé">Mutuelle de Santé</option>
-                  <option value="Military Medical Insurance">Military Medical Insurance</option>
-                  <option value="Radiant Insurance">Radiant Insurance</option>
-                  <option value="RSSB/RAMA Medical Insurance">RSSB/RAMA Medical Insurance</option>
-                  <option value="Prime Medical Insurance">Prime Medical Insurance</option>
-                  <option value="Britam Rwanda">Britam Rwanda</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
               </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#004F98] focus:border-[#004F98] sm:text-sm"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-              </div>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
             </div>
 
-            {/* Phone */}
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                 Phone Number
               </label>
-              <div className="mt-1">
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#004F98] focus:border-[#004F98] sm:text-sm"
-                  value={formData.phone}
-                  onChange={handleChange}
-                />
-              </div>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                value={formData.phone}
+                onChange={handleChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
             </div>
 
-            {/* Password */}
+            <div>
+              <label htmlFor="nationalId" className="block text-sm font-medium text-gray-700">
+                National ID
+              </label>
+              <input
+                id="nationalId"
+                name="nationalId"
+                type="text"
+                required
+                value={formData.nationalId}
+                onChange={handleChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                Role
+              </label>
+              <select
+                id="role"
+                name="role"
+                required
+                value={formData.role}
+                onChange={handleChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              >
+                {roles.map(role => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#004F98] focus:border-[#004F98] sm:text-sm"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-              </div>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                 Confirm Password
               </label>
-              <div className="mt-1">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#004F98] focus:border-[#004F98] sm:text-sm"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                />
-              </div>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
             </div>
 
             <div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#004F98] hover:bg-[#003d7a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004F98]"
+                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {loading ? 'Creating Account...' : 'Create Account'}
               </button>
             </div>
           </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Already have an account?{' '}
-                  <Link to="/login" className="font-medium text-[#004F98] hover:text-[#003d7a]">
-                    Sign in
-                  </Link>
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const Help = () => {
-  const [activeTab, setActiveTab] = useState('faq');
   const [openFaq, setOpenFaq] = useState(null);
 
   const faqs = [
@@ -30,94 +29,93 @@ const Help = () => {
 
   const helpCategories = [
     {
-      title: 'Emergency Services',
-      description: 'Get help with emergency requests and ambulance services',
-      icon: '',
-      contact: 'emergency@ingobyi.com'
-    },
-    {
-      title: 'Insurance Support',
-      description: 'Assistance with insurance verification and claims',
-      icon: '',
-      contact: 'insurance@ingobyi.com'
+      title: 'General Inquiries',
+      description: 'Questions about our services, partnerships, or general information about Ingobyi.',
+      email: 'general@ingobyi.com',
+      phone: '706',
+      icon: '📞'
     },
     {
       title: 'Technical Support',
-      description: 'Help with app-related issues and account management',
-      icon: '',
-      contact: 'support@ingobyi.com'
+      description: 'Get help with the app, account issues, or any technical difficulties.',
+      email: 'tech@ingobyi.com',
+      phone: '708',
+      icon: '🔧'
     },
     {
-      title: 'General Inquiries',
-      description: 'General questions and partnership opportunities',
-      icon: '',
-      contact: 'info@ingobyi.com'
+      title: 'Emergency Support',
+      description: 'Urgent assistance for emergency response and ambulance services.',
+      email: 'emergency@ingobyi.com',
+      phone: '707',
+      icon: '🚑'
+    },
+    {
+      title: 'Insurance Inquiries',
+      description: 'Questions about insurance coverage, claims, and documentation.',
+      email: 'insurance@ingobyi.com',
+      phone: '709',
+      icon: '📋'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="bg-#004F98 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="bg-ingobyi-blue-500">
+        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl font-extrabold text-white sm:text-5xl md:text-6xl">
-              Help Center
-            </h1>
-            <p className="mt-3 max-w-md mx-auto text-base text-gray-100 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-              Find answers to common questions and get support when you need it
+            <h1 className="text-4xl font-bold text-white">How can we help you?</h1>
+            <p className="mt-3 text-xl text-white">
+              Find answers to common questions or get in touch with our support team
             </p>
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('faq')}
-              className={`${
-                activeTab === 'faq'
-                  ? 'border-#004F98 text-#004F98'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-            >
-              Frequently Asked Questions
-            </button>
-            <button
-              onClick={() => setActiveTab('help')}
-              className={`${
-                activeTab === 'help'
-                  ? 'border-#004F98 text-#004F98'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-            >
-              Help & Support
-            </button>
-          </nav>
+      {/* Support Categories */}
+      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {helpCategories.map((category, index) => (
+            <div key={index} className="bg-gray-50 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-300">
+              <div className="text-4xl mb-4">{category.icon}</div>
+              <h3 className="text-xl font-semibold text-ingobyi-blue-600 mb-3">{category.title}</h3>
+              <p className="text-gray-600 mb-4">{category.description}</p>
+              <div className="space-y-2">
+                <p className="text-sm">
+                  <span className="font-medium text-ingobyi-blue-500">Email: </span>
+                  <a href={`mailto:${category.email}`} className="text-gray-600 hover:text-ingobyi-blue-500">
+                    {category.email}
+                  </a>
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium text-ingobyi-blue-500">Phone: </span>
+                  <a href={`tel:${category.phone}`} className="text-gray-600 hover:text-ingobyi-blue-500">
+                    {category.phone}
+                  </a>
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Content Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {activeTab === 'faq' ? (
-          <div className="space-y-6">
+      {/* FAQ Section */}
+      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div className="space-y-8">
+          <h2 className="text-2xl font-bold text-gray-900">Frequently Asked Questions</h2>
+          <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="bg-white shadow rounded-lg">
+              <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100">
                 <button
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                  className="w-full px-6 py-4 flex justify-between items-center focus:outline-none"
+                  className="w-full text-left px-6 py-4 focus:outline-none"
                 >
-                  <span className="text-lg font-medium text-gray-900">{faq.question}</span>
-                  <svg
-                    className={`h-6 w-6 transform ${openFaq === index ? 'rotate-180' : ''} text-gray-500`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-900">{faq.question}</h3>
+                    <span className={`transform transition-transform duration-200 ${openFaq === index ? 'rotate-180' : ''}`}>
+                      ▼
+                    </span>
+                  </div>
                 </button>
                 {openFaq === index && (
                   <div className="px-6 pb-4">
@@ -126,49 +124,6 @@ const Help = () => {
                 )}
               </div>
             ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
-            {helpCategories.map((category) => (
-              <div key={category.title} className="bg-white shadow rounded-lg p-6">
-                <div className="text-4xl mb-4">{category.icon}</div>
-                <h3 className="text-lg font-medium text-gray-900">{category.title}</h3>
-                <p className="mt-2 text-gray-600">{category.description}</p>
-                <div className="mt-4">
-                  <a
-                    href={`mailto:${category.contact}`}
-                    className="text-#004F98 hover:text-#003d7a font-medium"
-                  >
-                    {category.contact}
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Emergency Contact */}
-      <div className="bg-gray-100">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-              Need immediate assistance?
-            </h2>
-            <p className="mt-4 text-xl text-gray-600">
-              Our support team is available 24/7
-            </p>
-            <p className="mt-2 text-xl text-[#004F98]">
-              Call our hotline at 707
-            </p>
-            <div className="mt-8">
-              <Link
-                to="/emergency"
-                className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-#004F98 hover:bg-#003d7a"
-              >
-                Request Emergency Service
-              </Link>
-            </div>
           </div>
         </div>
       </div>

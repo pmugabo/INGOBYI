@@ -1,153 +1,151 @@
 import React, { useState, useEffect } from 'react';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 const DriverDashboard = () => {
-  const [emergencyRequests, setEmergencyRequests] = useState([]);
-  const [currentLocation, setCurrentLocation] = useState(null);
+  const [activeRequests, setActiveRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [mapError, setMapError] = useState(false);
+  const { user } = useAuth();
+
+  const mapContainerStyle = {
+    width: '100%',
+    height: '400px',
+    borderRadius: '0.5rem'
+  };
 
   useEffect(() => {
-    fetchEmergencyRequests();
-    getCurrentLocation();
-    // TODO: Set up Socket.IO for real-time updates
+    fetchActiveRequests();
   }, []);
 
-  const fetchEmergencyRequests = async () => {
+  const fetchActiveRequests = async () => {
     try {
-      const response = await axios.get('/api/driver/emergency-requests');
-      setEmergencyRequests(response.data);
-    } catch (error) {
-      console.error('Error fetching requests:', error);
+      const response = await axios.get('/api/emergency-requests/active');
+      setActiveRequests(response.data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch active requests');
+      console.error('Error fetching requests:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-        }
-      );
-    }
-  };
-
-  const handleStatusUpdate = async (requestId, status) => {
+  const handleRequestAccept = async (requestId) => {
     try {
-      await axios.put(`/api/driver/emergency-requests/${requestId}`, { status });
-      setEmergencyRequests(requests =>
-        requests.map(request =>
-          request.id === requestId ? { ...request, status } : request
-        )
-      );
-    } catch (error) {
-      console.error('Error updating status:', error);
+      await axios.post(`/api/emergency-requests/${requestId}/accept`, {
+        driverId: user.id
+      });
+      // Update the local state or refetch requests
+      await fetchActiveRequests();
+    } catch (err) {
+      console.error('Error accepting request:', err);
+      setError('Failed to accept request');
     }
   };
 
-  const mapContainerStyle = {
-    width: '100%',
-    height: '400px'
+  const handleMapError = () => {
+    setMapError(true);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ingobyi-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div className="px-4 py-6 sm:px-0">
-        <h1 className="text-3xl font-bold text-gray-900">Driver Dashboard</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="md:flex md:items-center md:justify-between mb-8">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+            Driver Dashboard
+          </h2>
+        </div>
+      </div>
 
-        {/* Map Section */}
-        <div className="mt-6">
-          <div className="bg-white shadow sm:rounded-lg">
-            {currentLocation && (
-              <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
-                <GoogleMap
-                  mapContainerStyle={mapContainerStyle}
-                  center={currentLocation}
-                  zoom={13}
-                >
-                  <Marker position={currentLocation} />
-                  {emergencyRequests.map(request => (
-                    <Marker
-                      key={request.id}
-                      position={request.location}
-                      onClick={() => setSelectedRequest(request)}
-                    />
-                  ))}
-                </GoogleMap>
-              </LoadScript>
+      {error && (
+        <div className="mb-4 p-4 rounded-md bg-ingobyi-blue-50">
+          <p className="text-sm text-ingobyi-blue-700">{error}</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Active Requests List */}
+        <div className="lg:col-span-1 bg-white shadow rounded-lg overflow-hidden">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+              Active Requests
+            </h3>
+            {activeRequests.length === 0 ? (
+              <p className="text-gray-500">No active emergency requests</p>
+            ) : (
+              <div className="space-y-4">
+                {activeRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="bg-gray-50 p-4 rounded-md cursor-pointer hover:bg-gray-100"
+                    onClick={() => setSelectedRequest(request)}
+                  >
+                    <p className="font-medium text-gray-900">{request.condition}</p>
+                    <p className="text-sm text-gray-500 mt-1">{request.address}</p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRequestAccept(request.id);
+                      }}
+                      className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-ingobyi-blue-500 hover:bg-ingobyi-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ingobyi-blue-500"
+                    >
+                      Accept Request
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
 
-        {/* Emergency Requests List */}
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Emergency Requests</h2>
-          {loading ? (
-            <div className="text-center py-4">Loading...</div>
-          ) : emergencyRequests.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">No emergency requests</div>
-          ) : (
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <ul className="divide-y divide-gray-200">
-                {emergencyRequests.map((request) => (
-                  <li key={request.id}>
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-red-600 truncate">
-                              {request.patientName}
-                            </p>
-                            <div className="ml-2 flex-shrink-0 flex">
-                              <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                ${request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                                  request.status === 'accepted' ? 'bg-green-100 text-green-800' : 
-                                  'bg-gray-100 text-gray-800'}`}>
-                                {request.status}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="mt-2">
-                            <p className="text-sm text-gray-500">
-                              Condition: {request.condition}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Location: {request.address}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="ml-4 flex-shrink-0">
-                          {request.status === 'pending' && (
-                            <button
-                              onClick={() => handleStatusUpdate(request.id, 'accepted')}
-                              className="ml-2 bg-green-600 text-white px-3 py-1 rounded-md text-sm"
-                            >
-                              Accept
-                            </button>
-                          )}
-                          {request.status === 'accepted' && (
-                            <button
-                              onClick={() => handleStatusUpdate(request.id, 'completed')}
-                              className="ml-2 bg-blue-600 text-white px-3 py-1 rounded-md text-sm"
-                            >
-                              Complete
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </li>
+        {/* Map View */}
+        <div className="lg:col-span-2">
+          {!mapError ? (
+            <LoadScript 
+              googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}
+              onError={handleMapError}
+              onLoad={() => setMapError(false)}
+            >
+              <GoogleMap
+                mapContainerStyle={mapContainerStyle}
+                center={selectedRequest?.location || { lat: -1.9441, lng: 30.0619 }} // Default to Kigali
+                zoom={13}
+                onLoad={() => setMapError(false)}
+                onError={handleMapError}
+              >
+                {activeRequests.map((request) => (
+                  <Marker
+                    key={request.id}
+                    position={request.location}
+                    onClick={() => setSelectedRequest(request)}
+                  />
                 ))}
-              </ul>
+              </GoogleMap>
+            </LoadScript>
+          ) : (
+            <div className="h-full bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center p-6">
+              <p className="text-gray-600 text-center">
+                Map loading failed. You can still view and accept requests from the list.
+                <br />
+                <span className="text-sm mt-2 block">
+                  Contact support if this issue persists.
+                </span>
+              </p>
             </div>
           )}
         </div>
