@@ -1,279 +1,104 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState } from 'react';
+import axios from 'axios';
 
 const EMTDashboard = () => {
-  const [activeCase, setActiveCase] = useState(null);
-  const [availableCases, setAvailableCases] = useState([]);
-  const [status, setStatus] = useState('available');
-  const [location, setLocation] = useState({ lat: null, lng: null });
-  const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [patientData, setPatientData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    // Get EMT's current location
-    if (navigator.geolocation) {
-      navigator.geolocation.watchPosition(
-        (position) => {
-          const newLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          setLocation(newLocation);
-          updateEMTLocation(newLocation);
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-        }
-      );
-    }
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setPatientData(null);
 
-    // Fetch available cases
-    fetchAvailableCases();
-
-    // Set up real-time updates
-    const socket = new WebSocket('ws://localhost:8080');
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'NEW_EMERGENCY') {
-        setAvailableCases(prev => [...prev, data.emergency]);
-      }
-    };
-
-    return () => {
-      socket.close();
-    };
-  }, []);
-
-  const updateEMTLocation = async (newLocation) => {
     try {
-      await fetch('/api/emt/location', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          emtId: user.id,
-          location: newLocation
-        })
-      });
-    } catch (error) {
-      console.error('Error updating location:', error);
-    }
-  };
-
-  const fetchAvailableCases = async () => {
-    try {
-      const response = await fetch('/api/emt/available-cases', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setAvailableCases(data);
-    } catch (error) {
-      console.error('Error fetching available cases:', error);
-    }
-  };
-
-  const acceptCase = async (caseId) => {
-    try {
-      const response = await fetch(`/api/emt/accept-case/${caseId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setActiveCase(data);
-      setStatus('responding');
-    } catch (error) {
-      console.error('Error accepting case:', error);
-    }
-  };
-
-  const updateCaseStatus = async (newStatus) => {
-    try {
-      await fetch(`/api/emt/case/${activeCase.id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      setStatus(newStatus);
-    } catch (error) {
-      console.error('Error updating status:', error);
+      const response = await axios.get(`/api/patients/search?q=${searchQuery}`);
+      setPatientData(response.data);
+    } catch (err) {
+      setError('Patient not found or error fetching data');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* EMT Status Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">EMT Status</h2>
-          <div className="flex items-center space-x-4 mb-6">
-            <div
-              className={`h-4 w-4 rounded-full ${
-                status === 'available'
-                  ? 'bg-green-500'
-                  : status === 'responding'
-                  ? 'bg-yellow-500'
-                  : 'bg-red-500'
-              }`}
-            ></div>
-            <span className="text-lg capitalize text-gray-700 dark:text-gray-300">
-              {status}
-            </span>
-          </div>
-          {location.lat && location.lng && (
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Current Location: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
-            </p>
-          )}
+    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <div className="px-4 py-6 sm:px-0">
+        <h1 className="text-3xl font-bold text-gray-900">EMT Dashboard</h1>
+        
+        {/* Search Form */}
+        <div className="mt-6">
+          <form onSubmit={handleSearch} className="flex space-x-4">
+            <div className="flex-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by phone number or National ID"
+                className="shadow-sm focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              {loading ? 'Searching...' : 'Search'}
+            </button>
+          </form>
         </div>
 
-        {/* Active Case Section */}
-        {activeCase && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-              Active Case
-            </h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Patient Name</p>
-                  <p className="text-lg text-gray-900 dark:text-white">{activeCase.patientName}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Emergency Type</p>
-                  <p className="text-lg text-gray-900 dark:text-white">{activeCase.emergencyType}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Location</p>
-                  <p className="text-lg text-gray-900 dark:text-white">{activeCase.location}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
-                  <p className="text-lg text-gray-900 dark:text-white capitalize">{status}</p>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
-                  Patient Vitals
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Blood Pressure</p>
-                    <input
-                      type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-gray-800"
-                      placeholder="120/80"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Heart Rate</p>
-                    <input
-                      type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-gray-800"
-                      placeholder="BPM"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Temperature</p>
-                    <input
-                      type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-gray-800"
-                      placeholder="°C"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Oxygen Saturation</p>
-                    <input
-                      type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-gray-800"
-                      placeholder="%"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex space-x-4">
-                {status === 'responding' && (
-                  <button
-                    onClick={() => updateCaseStatus('on-scene')}
-                    className="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700"
-                  >
-                    Mark as Arrived
-                  </button>
-                )}
-                {status === 'on-scene' && (
-                  <button
-                    onClick={() => updateCaseStatus('transporting')}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                  >
-                    Start Transport
-                  </button>
-                )}
-                {status === 'transporting' && (
-                  <button
-                    onClick={() => updateCaseStatus('completed')}
-                    className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-                  >
-                    Complete Case
-                  </button>
-                )}
-              </div>
-            </div>
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            {error}
           </div>
         )}
 
-        {/* Available Cases Section */}
-        {!activeCase && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-              Available Cases
-            </h2>
-            {availableCases.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No available cases</p>
-            ) : (
-              <div className="space-y-4">
-                {availableCases.map((case_) => (
-                  <div
-                    key={case_.id}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-                  >
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Patient Name</p>
-                        <p className="text-lg text-gray-900 dark:text-white">{case_.patientName}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Emergency Type</p>
-                        <p className="text-lg text-gray-900 dark:text-white">{case_.emergencyType}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Location</p>
-                        <p className="text-lg text-gray-900 dark:text-white">{case_.location}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Distance</p>
-                        <p className="text-lg text-gray-900 dark:text-white">{case_.distance} km</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => acceptCase(case_.id)}
-                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                    >
-                      Accept Case
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Patient Information */}
+        {patientData && (
+          <div className="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
+            <div className="px-4 py-5 sm:px-6">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Patient Information
+              </h3>
+            </div>
+            <div className="border-t border-gray-200">
+              <dl>
+                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Full name</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    {patientData.fullName}
+                  </dd>
+                </div>
+                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">National ID</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    {patientData.nationalId}
+                  </dd>
+                </div>
+                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Insurance Provider</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    {patientData.insuranceProvider}
+                  </dd>
+                </div>
+                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Insurance Number</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    {patientData.insuranceNumber}
+                  </dd>
+                </div>
+                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Medical History</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    {patientData.medicalHistory || 'No medical history available'}
+                  </dd>
+                </div>
+              </dl>
+            </div>
           </div>
         )}
       </div>
