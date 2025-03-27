@@ -19,10 +19,7 @@ import Dashboard from './pages/Dashboard';
 
 // Components
 import Layout from './components/Layout';
-<<<<<<< HEAD
 import ProtectedRoute from './components/ProtectedRoute';
-=======
->>>>>>> 46e226b (Update App.js)
 
 // Context
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -31,7 +28,6 @@ const App = () => {
   return (
     <AuthProvider>
       <Router>
-<<<<<<< HEAD
         <Layout>
           <Routes>
             {/* Public Routes */}
@@ -50,6 +46,14 @@ const App = () => {
               element={
                 <ProtectedRoute requiredRole="patient">
                   <PatientDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin-dashboard"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
                 </ProtectedRoute>
               }
             />
@@ -86,99 +90,18 @@ const App = () => {
               }
             />
             <Route
-              path="/admin-dashboard"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
-=======
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Layout><HomePage /></Layout>} />
-            <Route path="/about" element={<Layout><About /></Layout>} />
-            <Route path="/services" element={<Layout><Services /></Layout>} />
-            <Route path="/help" element={<Layout><Help /></Layout>} />
-            <Route path="/login" element={<Layout><Login /></Layout>} />
-            <Route path="/register" element={<Layout><Register /></Layout>} />
-            <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
-            <Route path="/emergency" element={<Layout><EmergencyRequest /></Layout>} />
-
-            {/* Protected Routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <Layout><Dashboard /></Layout>
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <PrivateRoute roles={['admin']}>
-                  <Layout><AdminDashboard /></Layout>
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/driver"
-              element={
-                <PrivateRoute roles={['driver']}>
-                  <Layout><DriverDashboard /></Layout>
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/emt"
-              element={
-                <PrivateRoute roles={['emt']}>
-                  <Layout><EMTDashboard /></Layout>
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/hospital"
-              element={
-                <PrivateRoute roles={['hospital']}>
-                  <Layout><HospitalDashboard /></Layout>
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/insurance"
-              element={
-                <PrivateRoute roles={['insurance']}>
-                  <Layout><InsuranceDashboard /></Layout>
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/patient"
-              element={
-                <PrivateRoute roles={['patient']}>
-                  <Layout><PatientDashboard /></Layout>
-                </PrivateRoute>
->>>>>>> 46e226b (Update App.js)
               }
             />
 
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-<<<<<<< HEAD
         </Layout>
-=======
-        </div>
->>>>>>> 46e226b (Update App.js)
       </Router>
     </AuthProvider>
   );

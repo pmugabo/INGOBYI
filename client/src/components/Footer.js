@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { PhoneIcon, EnvelopeIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 const Footer = () => {
   return (
     <footer className="bg-black">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
-        <div className="xl:grid xl:grid-cols-3 xl:gap-8">
+        <div className="xl:grid xl:grid-cols-4 xl:gap-8">
           <div className="space-y-8 xl:col-span-1">
             <h2 className="text-2xl font-bold text-white">INGOBYI</h2>
             <p className="text-gray-300 text-base">
@@ -32,10 +33,29 @@ const Footer = () => {
               </a>
             </div>
           </div>
+          <div className="mt-12 xl:mt-0">
+            <h3 className="text-sm font-bold text-gray-300 tracking-wider uppercase">
+              Contact Us
+            </h3>
+            <ul className="mt-4 space-y-4">
+              <li className="flex items-center space-x-3">
+                <PhoneIcon className="h-5 w-5 text-gray-300" />
+                <span className="text-base text-gray-300">Our hotline 707</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <EnvelopeIcon className="h-5 w-5 text-gray-300" />
+                <span className="text-base text-gray-300">emergency@ingobyi.com</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <ClockIcon className="h-5 w-5 text-gray-300" />
+                <span className="text-base text-gray-300">Available 24/7</span>
+              </li>
+            </ul>
+          </div>
           <div className="mt-12 grid grid-cols-2 gap-8 xl:mt-0 xl:col-span-2">
             <div className="md:grid md:grid-cols-2 md:gap-8">
               <div>
-                <h3 className="text-sm font-semibold text-gray-300 tracking-wider uppercase">
+                <h3 className="text-sm font-bold text-gray-300 tracking-wider uppercase">
                   Services
                 </h3>
                 <ul className="mt-4 space-y-4">
@@ -49,56 +69,29 @@ const Footer = () => {
                       About Us
                     </Link>
                   </li>
-                  <li>
-                    <Link to="/contact" className="text-base text-gray-300 hover:text-white">
-                      Contact
-                    </Link>
-                  </li>
                 </ul>
               </div>
               <div className="mt-12 md:mt-0">
-                <h3 className="text-sm font-semibold text-gray-300 tracking-wider uppercase">
+                <h3 className="text-sm font-bold text-gray-300 tracking-wider uppercase">
                   Legal
                 </h3>
                 <ul className="mt-4 space-y-4">
                   <li>
-                    <Link to="/privacy" className="text-base text-gray-300 hover:text-white">
+                    <span className="text-base text-gray-300">
                       Privacy Policy
-                    </Link>
+                    </span>
                   </li>
                   <li>
-                    <Link to="/terms" className="text-base text-gray-300 hover:text-white">
+                    <span className="text-base text-gray-300">
                       Terms of Service
-                    </Link>
+                    </span>
                   </li>
                 </ul>
               </div>
             </div>
             <div className="md:grid md:grid-cols-2 md:gap-8">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-300 tracking-wider uppercase">
-                  Company
-                </h3>
-                <ul className="mt-4 space-y-4">
-                  <li>
-                    <Link to="/about" className="text-base text-gray-300 hover:text-white">
-                      About
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/careers" className="text-base text-gray-300 hover:text-white">
-                      Careers
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/partners" className="text-base text-gray-300 hover:text-white">
-                      Partners
-                    </Link>
-                  </li>
-                </ul>
-              </div>
               <div className="mt-12 md:mt-0">
-                <h3 className="text-sm font-semibold text-gray-300 tracking-wider uppercase">
+                <h3 className="text-sm font-bold text-gray-300 tracking-wider uppercase">
                   Support
                 </h3>
                 <ul className="mt-4 space-y-4">

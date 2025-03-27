@@ -35,66 +35,30 @@ const About = () => {
         </div>
       </div>
 
-      {/* Feature Section */}
-      <div className="py-12 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:text-center">
-            <h2 className="text-base text-[#004F98] font-semibold tracking-wide uppercase">Features</h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-              A Better Way to Handle Emergencies
-            </p>
+      {/* Team Section */}
+      <div className="relative py-12">
+        <div className="absolute inset-0 bg-gradient-to-b from-ingobyi-blue-600/80 via-ingobyi-blue-500/40 to-ingobyi-blue-200/20"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center px-9 py-4 text-3xl font-medium rounded-md shadow-sm text-white bg-gray-900">
+              TEAM
+            </div>
           </div>
 
-          <div className="mt-10">
-            <dl className="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
-              <div className="relative">
-                <dt>
-                  <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#004F98] text-white">
-                    {/* Icon */}
-                  </div>
-                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Real-time Tracking</p>
-                </dt>
-                <dd className="mt-2 ml-16 text-base text-gray-500">
-                  Track emergency vehicles in real-time and get accurate ETAs for better response coordination.
-                </dd>
+          <div className="flex justify-center">
+            <div className="w-[17rem] bg-white/80 backdrop-blur-sm rounded-lg overflow-hidden">
+              <div className="aspect-w-1 aspect-h-1">
+                <img
+                  src="/images/me1.jpg"
+                  alt="Patricia Mugabo"
+                  className="w-full h-full object-cover"
+                />
               </div>
-
-              <div className="relative">
-                <dt>
-                  <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#004F98] text-white">
-                    {/* Icon */}
-                  </div>
-                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Instant Communication</p>
-                </dt>
-                <dd className="mt-2 ml-16 text-base text-gray-500">
-                  Direct communication between patients, drivers, and medical facilities.
-                </dd>
+              <div className="p-3 text-center">
+                <h3 className="text-base font-semibold text-gray-900">Patricia Mugabo</h3>
+                <p className="mt-0.5 text-xs text-blue-600">Founder</p>
               </div>
-
-              <div className="relative">
-                <dt>
-                  <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#004F98] text-white">
-                    {/* Icon */}
-                  </div>
-                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Insurance Integration</p>
-                </dt>
-                <dd className="mt-2 ml-16 text-base text-gray-500">
-                  Seamless insurance verification and claims processing for faster service.
-                </dd>
-              </div>
-
-              <div className="relative">
-                <dt>
-                  <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#004F98] text-white">
-                    {/* Icon */}
-                  </div>
-                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Hospital Network</p>
-                </dt>
-                <dd className="mt-2 ml-16 text-base text-gray-500">
-                  Connected network of hospitals and medical facilities for optimal patient care.
-                </dd>
-              </div>
-            </dl>
+            </div>
           </div>
         </div>
       </div>
