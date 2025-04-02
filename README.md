@@ -2,7 +2,7 @@
 
 A full-stack web application for managing emergency medical services with real-time ambulance tracking, insurance verification, and hospital coordination.
 
-## 🌟 Features
+## Features
 
 ### Patient Module
 - Request emergency assistance
@@ -27,7 +27,7 @@ A full-stack web application for managing emergency medical services with real-t
 - Patient status tracking
 - Resource management
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Frontend**: React, Tailwind CSS, Socket.IO Client
 - **Backend**: Node.js, Express
@@ -37,7 +37,7 @@ A full-stack web application for managing emergency medical services with real-t
 - **Authentication**: JWT
 - **Deployment**: Vercel
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have met the following requirements:
 
@@ -48,7 +48,7 @@ Before you begin, ensure you have met the following requirements:
 - GitHub account
 - Vercel account (for deployment)
 
-## 🚀 Local Development Setup
+## Local Development Setup
 
 ### 1. Clone the Repository
 ```bash
@@ -99,7 +99,7 @@ cd ../client
 npm start
 ```
 
-## 🌐 Deployment
+## Deployment
 
 ### Vercel Deployment
 1. Fork the repository
@@ -108,7 +108,7 @@ npm start
 4. Configure environment variables
 5. Deploy
 
-## 🔒 Environment Variables for Production
+## Environment Variables for Production
 
 ### Backend Vercel Env
 - `MONGO_URI`: MongoDB Atlas connection string
@@ -120,7 +120,7 @@ npm start
 - `REACT_APP_API_URL`: Backend API URL
 - `REACT_APP_GOOGLE_MAPS_API_KEY`: Google Maps API key
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
@@ -128,7 +128,7 @@ npm start
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 Distributed under the MIT License.
 
