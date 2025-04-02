@@ -5,47 +5,97 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
+const path = require('path');
 
 const app = express();
 
+// Environment variables
+const PORT = process.env.PORT || 5000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+  console.error('CRITICAL: MongoDB connection string is not defined');
+  process.exit(1);
+}
+
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:62876',
+  // Add your Vercel frontend URL when deployed
+  process.env.FRONTEND_URL,
+  'https://ingobyi.vercel.app'
+].filter(Boolean);
+
+// Security middleware
 app.use(cors({
-  origin: 'http://localhost:3001',
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400
 }));
 
-// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+// Request logging in development
+if (NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`, req.body);
+    next();
+  });
+}
 
 // MongoDB connection options
 const mongoOptions = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
+  serverSelectionTimeoutMS: 10000, // Timeout after 10 seconds
+  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+  appName: 'ingobyi-backend'
 };
 
 // Connect to MongoDB
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ingobyi';
-
 mongoose.connect(MONGO_URI, mongoOptions)
   .then(() => {
-    console.log('Connected to MongoDB successfully');
+    console.log('Connected to MongoDB Atlas successfully');
   })
   .catch((error) => {
     console.error('MongoDB connection error:', error);
-    process.exit(1); // Exit if we can't connect to the database
+    process.exit(1);
   });
 
 // Handle MongoDB connection events
-mongoose.connection.on('error', err => {
-  console.error('MongoDB connection error:', err);
+mongoose.connection.on('connected', () => {
+  console.log('Mongoose connected to MongoDB Atlas');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('Mongoose connection error:', err);
 });
 
 mongoose.connection.on('disconnected', () => {
-  console.log('MongoDB disconnected. Attempting to reconnect...');
+  console.log('Mongoose disconnected from MongoDB Atlas');
 });
 
 mongoose.connection.on('reconnected', () => {
@@ -53,18 +103,12 @@ mongoose.connection.on('reconnected', () => {
 });
 
 // Health check endpoint
-// app.get('/', (req, res) => {
-//   res.json({ 
-//     status: 'ok',
-//     message: 'Ingobyi Emergency System API is running',
-//     timestamp: new Date().toISOString()
-//   });
-// });
-
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`, req.body);
-  next();
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    message: 'Ingobyi Emergency System API is running',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Auth Routes
@@ -177,7 +221,6 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 5003;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
