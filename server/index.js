@@ -12,7 +12,12 @@ const app = express();
 // Environment variables
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ingobyi';
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+  console.error('CRITICAL: MongoDB connection string is not defined');
+  process.exit(1);
+}
 
 // CORS configuration
 const allowedOrigins = [
@@ -65,9 +70,9 @@ if (NODE_ENV === 'development') {
 const mongoOptions = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  appName: 'ingobyi-cluster',
-  retryWrites: true,
-  w: 'majority'
+  serverSelectionTimeoutMS: 10000, // Timeout after 10 seconds
+  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+  appName: 'ingobyi-backend'
 };
 
 // Connect to MongoDB

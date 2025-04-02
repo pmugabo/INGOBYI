@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' });
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -66,40 +66,54 @@ if (NODE_ENV === 'development') {
   });
 }
 
-// MongoDB connection options
+// Detailed MongoDB connection options
 const mongoOptions = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 10000, // Timeout after 10 seconds
-  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-  appName: 'ingobyi-backend'
+  serverSelectionTimeoutMS: 15000,  // 15 seconds
+  socketTimeoutMS: 45000,  // 45 seconds
+  connectTimeoutMS: 10000,  // 10 seconds
+  retryWrites: true,
+  w: 'majority'
 };
 
-// Connect to MongoDB
+// Connect to MongoDB with comprehensive error handling
 mongoose.connect(MONGO_URI, mongoOptions)
   .then(() => {
-    console.log('Connected to MongoDB Atlas successfully');
+    console.log('Successfully connected to MongoDB Atlas');
   })
   .catch((error) => {
-    console.error('MongoDB connection error:', error);
+    console.error('MongoDB connection FATAL error:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
     process.exit(1);
   });
 
-// Handle MongoDB connection events
+// Connection event listeners
 mongoose.connection.on('connected', () => {
-  console.log('Mongoose connected to MongoDB Atlas');
+  console.log('Mongoose connected to MongoDB Atlas successfully');
 });
 
 mongoose.connection.on('error', (err) => {
-  console.error('Mongoose connection error:', err);
+  console.error('Mongoose connection persistent error:', err);
 });
 
 mongoose.connection.on('disconnected', () => {
   console.log('Mongoose disconnected from MongoDB Atlas');
 });
 
-mongoose.connection.on('reconnected', () => {
-  console.log('MongoDB reconnected successfully');
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  try {
+    await mongoose.connection.close();
+    console.log('MongoDB connection closed through app termination');
+    process.exit(0);
+  } catch (error) {
+    console.error('Error during app termination:', error);
+    process.exit(1);
+  }
 });
 
 // Health check endpoint
