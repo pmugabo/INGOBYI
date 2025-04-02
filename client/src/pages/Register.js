@@ -11,7 +11,7 @@ const Register = () => {
     confirmPassword: '',
     phone: '',
     nationalId: '',
-    role: 'patient' // Default role
+    role: 'patient'
   });
 
   const [error, setError] = useState('');
@@ -23,8 +23,8 @@ const Register = () => {
     { value: 'patient', label: 'Patient' },
     { value: 'emt', label: 'EMT' },
     { value: 'driver', label: 'Driver' },
-    { value: 'hospital_staff', label: 'Hospital Staff' },
-    { value: 'insurance_provider', label: 'Insurance Provider' }
+    { value: 'hospital', label: 'Hospital Staff' },
+    { value: 'insurance', label: 'Insurance Provider' }
   ];
 
   const handleSubmit = async (e) => {
@@ -37,22 +37,30 @@ const Register = () => {
 
     try {
       setLoading(true);
-      const response = await register(formData); // Get the response from register
-      console.log('Registration response:', response); // Add logging
-      
-      // Navigate to the redirect URL from the response
-      if (response.redirectTo) {
-        navigate(response.redirectTo);
-      } else {
-        // Fallback to role-based dashboard routes
+      // Prepare user data
+      const userData = {
+        fullName: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        nationalId: formData.nationalId,
+        role: formData.role
+      };
+
+      console.log('Submitting registration with:', userData);
+      const response = await register(userData);
+      console.log('Registration response:', response);
+
+      // Navigate based on role
+      if (response.user && response.user.role) {
         const dashboardRoutes = {
           patient: '/patient-dashboard',
           emt: '/emt-dashboard',
           driver: '/driver-dashboard',
-          hospital_staff: '/hospital-dashboard',
-          insurance_provider: '/insurance-dashboard'
+          hospital: '/hospital-dashboard',
+          insurance: '/insurance-dashboard'
         };
-        navigate(dashboardRoutes[formData.role] || '/dashboard');
+        navigate(dashboardRoutes[response.user.role] || '/dashboard');
       }
     } catch (err) {
       console.error('Registration error:', err);
@@ -104,7 +112,7 @@ const Register = () => {
                   required
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
 
@@ -119,7 +127,7 @@ const Register = () => {
                   required
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
             </div>
@@ -136,7 +144,7 @@ const Register = () => {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
 
@@ -151,7 +159,7 @@ const Register = () => {
                 required
                 value={formData.phone}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
 
@@ -163,10 +171,10 @@ const Register = () => {
                 id="nationalId"
                 name="nationalId"
                 type="text"
-                required
+                required={formData.role === 'patient'}
                 value={formData.nationalId}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
 
@@ -177,10 +185,9 @@ const Register = () => {
               <select
                 id="role"
                 name="role"
-                required
                 value={formData.role}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
                 {roles.map(role => (
                   <option key={role.value} value={role.value}>
@@ -201,7 +208,7 @@ const Register = () => {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
 
@@ -216,7 +223,7 @@ const Register = () => {
                 required
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
 
@@ -224,7 +231,9 @@ const Register = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  loading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 {loading ? 'Creating Account...' : 'Create Account'}
               </button>

@@ -1,71 +1,162 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import DashboardLayout from '../components/DashboardLayout';
+import EmergencyRequest from '../components/patient/EmergencyRequest';
+import MedicalInfo from '../components/patient/MedicalInfo';
 
 const PatientDashboard = () => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [activeRequest, setActiveRequest] = useState(null);
+  const [patientInfo, setPatientInfo] = useState(null);
+  const [location, setLocation] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Simulated data
+        setPatientInfo({
+          name: 'John Doe',
+          emergencyContacts: [
+            { name: 'Jane Doe', relationship: 'Spouse', phone: '123-456-7890' },
+            { name: 'Mike Doe', relationship: 'Son', phone: '123-456-7891' }
+          ],
+          conditions: [
+            'Type 2 Diabetes',
+            'Hypertension'
+          ],
+          allergies: [
+            'Penicillin',
+            'Peanuts'
+          ],
+          medications: [
+            { name: 'Metformin', dosage: '500mg daily' },
+            { name: 'Lisinopril', dosage: '10mg daily' }
+          ],
+          insurance: {
+            provider: 'HealthCare Plus',
+            policyNumber: 'HC123456789',
+            coverageType: 'Full Coverage'
+          }
+        });
+
+        setActiveRequest({
+          id: 'EMR001',
+          status: 'en-route',
+          eta: '8',
+          ambulance: {
+            id: 'AMB-007',
+            type: 'Advanced Life Support'
+          },
+          emt: {
+            id: 'EMT-123',
+            name: 'Dr. Sarah Wilson',
+            avatar: null
+          },
+          hospital: {
+            name: 'Central City Hospital',
+            address: '123 Healthcare Ave, City',
+            emergencyContact: '555-EMERGENCY'
+          }
+        });
+
+        // Get current location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              setLocation({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              });
+            },
+            (err) => console.error('Error getting location:', err)
+          );
+        }
+
+        setError('');
+      } catch (err) {
+        setError('Failed to fetch dashboard data');
+        console.error('Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    // Set up periodic refresh
+    const interval = setInterval(fetchData, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleEmergencyRequest = () => {
+    // Handle new emergency request
+    console.log('Emergency requested');
+  };
+
+  const handleCallEmt = (emtId) => {
+    // Handle EMT call
+    console.log('Calling EMT:', emtId);
+  };
+
+  const handleCallDispatch = () => {
+    // Handle dispatch call
+    console.log('Calling dispatch');
+  };
+
   return (
-    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div className="px-4 py-6 sm:px-0">
-        <h1 className="text-3xl font-bold text-gray-900">Patient Dashboard</h1>
-        
-        {/* Quick Actions */}
-        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <Link
-            to="/emergency"
-            className="bg-white overflow-hidden shadow rounded-lg p-6 hover:bg-gray-50"
-          >
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-red-500 rounded-md p-3">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h2 className="text-lg font-medium text-gray-900">Request Ambulance</h2>
-                <p className="mt-1 text-sm text-gray-500">Request emergency assistance</p>
-              </div>
+    <DashboardLayout>
+      <div className="px-4 py-6 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Patient Dashboard</h1>
+              {patientInfo && (
+                <p className="mt-1 text-sm text-gray-500">Welcome back, {patientInfo.name}</p>
+              )}
             </div>
-          </Link>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h2 className="text-lg font-medium text-gray-900">Insurance Info</h2>
-                <p className="mt-1 text-sm text-gray-500">View your insurance details</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h2 className="text-lg font-medium text-gray-900">History</h2>
-                <p className="mt-1 text-sm text-gray-500">View past emergency requests</p>
-              </div>
-            </div>
+            {!activeRequest && (
+              <button
+                onClick={handleEmergencyRequest}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                🚑 Request Emergency
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="mt-8">
-          <h2 className="text-lg font-medium text-gray-900">Recent Activity</h2>
-          <div className="mt-4 bg-white shadow overflow-hidden sm:rounded-lg">
-            <ul className="divide-y divide-gray-200">
-              {/* Add recent activity items here */}
-            </ul>
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+            {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Emergency Request & Map */}
+          <div className="lg:col-span-2 space-y-6">
+            <EmergencyRequest
+              request={activeRequest}
+              onCallEmt={handleCallEmt}
+              onCallDispatch={handleCallDispatch}
+            />
+            
+            {/* Map */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="bg-gray-100 h-96 flex items-center justify-center">
+                <p className="text-gray-500">Interactive Map Coming Soon</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Medical Info */}
+          <div className="lg:col-span-1">
+            <MedicalInfo patient={patientInfo} />
           </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

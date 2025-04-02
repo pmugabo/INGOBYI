@@ -8,33 +8,58 @@ const User = require('./models/User');
 
 const app = express();
 
-// Middleware
+// CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001'],
-  credentials: true
+  origin: 'http://localhost:3001',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Middleware
 app.use(express.json());
 
-// Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/ingobyi', {
+// MongoDB connection options
+const mongoOptions = {
   useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => {
-  console.log('Connected to MongoDB successfully');
-})
-.catch((error) => {
-  console.error('MongoDB connection error:', error);
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+};
+
+// Connect to MongoDB
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ingobyi';
+
+mongoose.connect(MONGO_URI, mongoOptions)
+  .then(() => {
+    console.log('Connected to MongoDB successfully');
+  })
+  .catch((error) => {
+    console.error('MongoDB connection error:', error);
+    process.exit(1); // Exit if we can't connect to the database
+  });
+
+// Handle MongoDB connection events
+mongoose.connection.on('error', err => {
+  console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected. Attempting to reconnect...');
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('MongoDB reconnected successfully');
 });
 
 // Health check endpoint
-app.get('/', (req, res) => {
-  res.json({ 
-    status: 'ok',
-    message: 'Ingobyi Emergency System API is running',
-    timestamp: new Date().toISOString()
-  });
-});
+// app.get('/', (req, res) => {
+//   res.json({ 
+//     status: 'ok',
+//     message: 'Ingobyi Emergency System API is running',
+//     timestamp: new Date().toISOString()
+//   });
+// });
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -42,173 +67,113 @@ app.use((req, res, next) => {
   next();
 });
 
-// Authentication routes
+// Auth Routes
 app.post('/api/auth/register', async (req, res) => {
   try {
+    const { email, password, fullName, phone, nationalId, role } = req.body;
     console.log('Registration request:', req.body);
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-      phone,
-      nationalId,
-      role
-    } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
 
     // Check if user exists
-    const existingUser = await User.findOne({ 
-      $or: [
-        { email },
-        { nationalId },
-        { phone }
-      ]
-    });
-
-    if (existingUser) {
-      if (existingUser.email === email) {
-        return res.status(400).json({ message: 'User already exists with this email' });
-      }
-      if (existingUser.nationalId === nationalId) {
-        return res.status(400).json({ message: 'User already exists with this National ID' });
-      }
-      if (existingUser.phone === phone) {
-        return res.status(400).json({ message: 'User already exists with this phone number' });
-      }
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
     }
 
-    // Create new user - password will be hashed by the User model middleware
+    // Create new user
     const user = new User({
-      firstName,
-      lastName,
       email,
       password,
+      fullName,
       phone,
       nationalId,
-      role
-    });
-
-    console.log('Saving user:', { 
-      firstName, 
-      lastName, 
-      email, 
-      phone, 
-      nationalId,
-      role
+      role,
+      status: 'approved'
     });
 
     await user.save();
-    console.log('User saved successfully');
+    console.log('User saved:', user);
 
-    // Generate JWT token with role
+    // Generate JWT token
     const token = jwt.sign(
-      { 
-        userId: user._id,
-        role: user.role
-      },
-      process.env.JWT_SECRET || 'ingobyi-emergency-system-secret-key-change-in-production',
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
 
-    // Get dashboard route based on role
-    const dashboardRoutes = {
-      patient: '/patient-dashboard',
-      emt: '/emt-dashboard',
-      driver: '/driver-dashboard',
-      hospital_staff: '/hospital-dashboard',
-      insurance_provider: '/insurance-dashboard'
-    };
-
+    // Return success with token and user data
     res.status(201).json({
-      message: 'User registered successfully',
+      success: true,
+      message: 'Account created successfully',
       token,
       user: {
         id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
         email: user.email,
-        phone: user.phone,
-        role: user.role
-      },
-      redirectTo: dashboardRoutes[user.role] || '/dashboard'
+        fullName: user.fullName,
+        role: user.role,
+        status: user.status
+      }
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Failed to create account', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error creating account'
+    });
   }
 });
 
-// Login route
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { identifier, password, role } = req.body;
-    console.log('Login attempt:', { identifier, role });
+    const { email, password } = req.body;
+    console.log('Login attempt:', { email });
 
-    // Find user by email or phone
-    const user = await User.findOne({
-      $or: [
-        { email: identifier },
-        { phone: identifier }
-      ]
-    });
-
+    // Find user
+    const user = await User.findOne({ email });
     if (!user) {
-      console.log('User not found');
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
 
-    // Verify role matches
-    if (user.role !== role) {
-      console.log('Role mismatch:', { expected: role, actual: user.role });
-      return res.status(401).json({ message: 'Invalid role for this user' });
+    // Check password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
 
-    // Compare password
-    const isValidPassword = await user.comparePassword(password);
-    console.log('Password valid:', isValidPassword);
-
-    if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    // Generate token with role
+    // Generate JWT token
     const token = jwt.sign(
-      { 
-        userId: user._id,
-        role: user.role 
-      },
-      process.env.JWT_SECRET || 'ingobyi-emergency-system-secret-key-change-in-production',
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
 
-    // Get dashboard route based on role
-    const dashboardRoutes = {
-      patient: '/patient-dashboard',
-      emt: '/emt-dashboard',
-      driver: '/driver-dashboard',
-      hospital_staff: '/hospital-dashboard',
-      insurance_provider: '/insurance-dashboard'
-    };
-
+    // Return success with token and user data
     res.json({
+      success: true,
+      message: 'Logged in successfully',
       token,
       user: {
         id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
         email: user.email,
-        phone: user.phone,
-        role: user.role
-      },
-      redirectTo: dashboardRoutes[user.role] || '/dashboard'
+        fullName: user.fullName,
+        role: user.role,
+        status: user.status
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Error logging in', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error logging in'
+    });
   }
 });
 

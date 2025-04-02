@@ -1,156 +1,220 @@
 import React, { useState, useEffect } from 'react';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
+import DashboardLayout from '../components/DashboardLayout';
+import VehicleStatus from '../components/driver/VehicleStatus';
+import EmergencyAlert from '../components/driver/EmergencyAlert';
+import PerformanceStats from '../components/driver/PerformanceStats';
 
 const DriverDashboard = () => {
-  const [activeRequests, setActiveRequests] = useState([]);
-  const [selectedRequest, setSelectedRequest] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [mapError, setMapError] = useState(false);
-  const { user } = useAuth();
+  const [error, setError] = useState('');
+  const [activeEmergency, setActiveEmergency] = useState(null);
+  const [emergencies, setEmergencies] = useState([]);
+  const [vehicle, setVehicle] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [location, setLocation] = useState(null);
 
-  const mapContainerStyle = {
-    width: '100%',
-    height: '400px',
-    borderRadius: '0.5rem'
-  };
-
+  // Simulated data - replace with actual API calls
   useEffect(() => {
-    fetchActiveRequests();
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Simulated data
+        setActiveEmergency({
+          id: 'EMG123',
+          location: '123 Emergency St, Downtown',
+          description: 'Cardiac emergency, elderly patient',
+          priority: 'high',
+          eta: '8 mins'
+        });
+
+        setEmergencies([
+          {
+            id: 'EMG001',
+            patientName: 'John Smith',
+            location: '456 Main St',
+            hospital: 'St. Mary Hospital',
+            status: 'en-route',
+            priority: 'high',
+            description: 'Cardiac arrest, requires immediate attention',
+            eta: '5 mins'
+          },
+          {
+            id: 'EMG002',
+            patientName: 'Sarah Johnson',
+            location: '789 Oak Ave',
+            hospital: 'Central Hospital',
+            status: 'pending',
+            priority: 'medium',
+            description: 'Broken arm, conscious and stable',
+            eta: '15 mins'
+          }
+        ]);
+
+        setVehicle({
+          id: 'AMB-001',
+          fuelLevel: 75,
+          status: 'ready',
+          mileage: 45280,
+          nextService: '500 km',
+          alerts: ['Tire pressure low']
+        });
+
+        setStats({
+          avgResponseTime: '7.2',
+          tripsToday: '5',
+          totalDistance: '120',
+          recentActivity: [
+            { description: 'Completed emergency transport', time: '10 mins ago' },
+            { description: 'Refueled vehicle', time: '1 hour ago' },
+            { description: 'Started shift', time: '3 hours ago' }
+          ]
+        });
+
+        // Get current location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              setLocation({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              });
+            },
+            (err) => console.error('Error getting location:', err)
+          );
+        }
+
+        setError('');
+      } catch (err) {
+        setError('Failed to fetch dashboard data');
+        console.error('Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    // Set up periodic refresh
+    const interval = setInterval(fetchData, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchActiveRequests = async () => {
+  const handleEmergencyAccept = async (emergencyId) => {
     try {
-      const response = await axios.get('/api/emergency-requests/active');
-      setActiveRequests(response.data);
-      setError(null);
+      // Accept emergency through API
+      // await axios.post(`/api/emergencies/${emergencyId}/accept`);
+      setActiveEmergency(null);
     } catch (err) {
-      setError('Failed to fetch active requests');
-      console.error('Error fetching requests:', err);
-    } finally {
-      setLoading(false);
+      setError('Failed to accept emergency');
     }
   };
 
-  const handleRequestAccept = async (requestId) => {
+  const handleEmergencyDecline = async (emergencyId) => {
     try {
-      await axios.post(`/api/emergency-requests/${requestId}/accept`, {
-        driverId: user.id
-      });
-      // Update the local state or refetch requests
-      await fetchActiveRequests();
+      // Decline emergency through API
+      // await axios.post(`/api/emergencies/${emergencyId}/decline`);
+      setActiveEmergency(null);
     } catch (err) {
-      console.error('Error accepting request:', err);
-      setError('Failed to accept request');
+      setError('Failed to decline emergency');
     }
   };
-
-  const handleMapError = () => {
-    setMapError(true);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ingobyi-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="md:flex md:items-center md:justify-between mb-8">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-            Driver Dashboard
-          </h2>
-        </div>
-      </div>
-
-      {error && (
-        <div className="mb-4 p-4 rounded-md bg-ingobyi-blue-50">
-          <p className="text-sm text-ingobyi-blue-700">{error}</p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Active Requests List */}
-        <div className="lg:col-span-1 bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-              Active Requests
-            </h3>
-            {activeRequests.length === 0 ? (
-              <p className="text-gray-500">No active emergency requests</p>
-            ) : (
-              <div className="space-y-4">
-                {activeRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="bg-gray-50 p-4 rounded-md cursor-pointer hover:bg-gray-100"
-                    onClick={() => setSelectedRequest(request)}
-                  >
-                    <p className="font-medium text-gray-900">{request.condition}</p>
-                    <p className="text-sm text-gray-500 mt-1">{request.address}</p>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRequestAccept(request.id);
-                      }}
-                      className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-ingobyi-blue-500 hover:bg-ingobyi-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ingobyi-blue-500"
-                    >
-                      Accept Request
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+    <DashboardLayout>
+      <div className="px-4 py-6 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold text-gray-900">Driver Dashboard</h1>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => window.location.reload()}
+                className="p-2 text-gray-400 hover:text-gray-500"
+              >
+                🔄
+              </button>
+              {location && (
+                <span className="text-sm text-gray-500">
+                  📍 {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Map View */}
-        <div className="lg:col-span-2">
-          {!mapError ? (
-            <LoadScript 
-              googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}
-              onError={handleMapError}
-              onLoad={() => setMapError(false)}
-            >
-              <GoogleMap
-                mapContainerStyle={mapContainerStyle}
-                center={selectedRequest?.location || { lat: -1.9441, lng: 30.0619 }} // Default to Kigali
-                zoom={13}
-                onLoad={() => setMapError(false)}
-                onError={handleMapError}
-              >
-                {activeRequests.map((request) => (
-                  <Marker
-                    key={request.id}
-                    position={request.location}
-                    onClick={() => setSelectedRequest(request)}
-                  />
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+            {error}
+          </div>
+        )}
+
+        {/* Emergency Alert */}
+        {activeEmergency && (
+          <div className="mb-6">
+            <EmergencyAlert
+              alert={activeEmergency}
+              onAccept={handleEmergencyAccept}
+              onDecline={handleEmergencyDecline}
+            />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Active Emergencies */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Active Emergencies</h2>
+              <div className="space-y-4">
+                {emergencies.map(emergency => (
+                  <div
+                    key={emergency.id}
+                    className={`p-4 rounded-lg border ${
+                      emergency.priority === 'high' ? 'bg-red-50 border-red-200' :
+                      emergency.priority === 'medium' ? 'bg-yellow-50 border-yellow-200' :
+                      'bg-green-50 border-green-200'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium">{emergency.patientName}</h3>
+                        <p className="text-sm mt-1">{emergency.description}</p>
+                        <div className="mt-2 space-y-1 text-sm">
+                          <p>📍 Pickup: {emergency.location}</p>
+                          <p>🏥 Hospital: {emergency.hospital}</p>
+                          <p>⏱️ ETA: {emergency.eta}</p>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs capitalize ${
+                        emergency.status === 'en-route' ? 'bg-blue-100 text-blue-800' :
+                        emergency.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {emergency.status}
+                      </span>
+                    </div>
+                  </div>
                 ))}
-              </GoogleMap>
-            </LoadScript>
-          ) : (
-            <div className="h-full bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center p-6">
-              <p className="text-gray-600 text-center">
-                Map loading failed. You can still view and accept requests from the list.
-                <br />
-                <span className="text-sm mt-2 block">
-                  Contact support if this issue persists.
-                </span>
-              </p>
+              </div>
             </div>
-          )}
+            <VehicleStatus vehicle={vehicle} />
+          </div>
+
+          {/* Right Column - Map and Stats */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Map */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="bg-gray-100 h-96 flex items-center justify-center">
+                <p className="text-gray-500">Interactive Map Coming Soon</p>
+              </div>
+            </div>
+
+            {/* Performance Stats */}
+            <PerformanceStats stats={stats} />
+          </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

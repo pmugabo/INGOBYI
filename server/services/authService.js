@@ -15,11 +15,11 @@ class AuthService {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(userData.password, salt);
 
-      // Create new user with status pending
+      // Create new user
       const user = new User({
         ...userData,
         password: hashedPassword,
-        status: 'pending',
+        status: 'approved',
         createdAt: new Date()
       });
 
@@ -29,9 +29,18 @@ class AuthService {
       // Generate JWT token
       const token = jwt.sign(
         { id: user._id, role: user.role },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '24h' }
       );
+
+      // Return user data with dashboard route
+      const dashboardRoutes = {
+        patient: '/patient',
+        emt: '/emt',
+        driver: '/driver',
+        hospital: '/hospital',
+        insurance: '/insurance'
+      };
 
       return {
         token,
@@ -41,7 +50,8 @@ class AuthService {
           fullName: user.fullName,
           role: user.role,
           status: user.status
-        }
+        },
+        redirectTo: dashboardRoutes[user.role] || '/dashboard'
       };
     } catch (error) {
       throw error;
@@ -62,17 +72,21 @@ class AuthService {
         throw new Error('Invalid credentials');
       }
 
-      // Check if account is approved
-      if (user.status !== 'approved') {
-        throw new Error('Your account is pending approval');
-      }
-
       // Generate JWT token
       const token = jwt.sign(
         { id: user._id, role: user.role },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '24h' }
       );
+
+      // Return user data with dashboard route
+      const dashboardRoutes = {
+        patient: '/patient',
+        emt: '/emt',
+        driver: '/driver',
+        hospital: '/hospital',
+        insurance: '/insurance'
+      };
 
       return {
         token,
@@ -82,7 +96,8 @@ class AuthService {
           fullName: user.fullName,
           role: user.role,
           status: user.status
-        }
+        },
+        redirectTo: dashboardRoutes[user.role] || '/dashboard'
       };
     } catch (error) {
       throw error;

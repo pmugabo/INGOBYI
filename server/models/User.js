@@ -2,12 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  firstName: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  lastName: {
+  fullName: {
     type: String,
     required: true,
     trim: true
@@ -28,11 +23,24 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  nationalId: {
+  role: {
     type: String,
     required: true,
-    trim: true,
-    unique: true
+    enum: ['patient', 'driver', 'emt', 'hospital', 'insurance', 'admin'],
+    default: 'patient'
+  },
+  status: {
+    type: String,
+    required: true,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'approved'
+  },
+  nationalId: {
+    type: String,
+    required: function() {
+      return this.role === 'patient';
+    },
+    trim: true
   },
   createdAt: {
     type: Date,
@@ -53,7 +61,7 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Compare password method
+// Method to compare password
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
     return await bcrypt.compare(candidatePassword, this.password);
