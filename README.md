@@ -99,41 +99,4 @@ cd ../client
 npm start
 ```
 
-## Deployment
-
-### Vercel Deployment
-1. Fork the repository
-2. Connect Vercel to your GitHub
-3. Select the repository
-4. Configure environment variables
-5. Deploy
-
-## Environment Variables for Production
-
-### Backend Vercel Env
-- `MONGO_URI`: MongoDB Atlas connection string
-- `JWT_SECRET`: Long random secret
-- `NODE_ENV`: `production`
-- `PORT`: `5000`
-
-### Frontend Vercel Env
-- `REACT_APP_API_URL`: Backend API URL
-- `REACT_APP_GOOGLE_MAPS_API_KEY`: Google Maps API key
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-Distributed under the MIT License.
-
-## 📞 Contact
-
-Patrick Mugabo - pmugabo@example.com
-
-Project Link: [https://github.com/pmugabo/INGOBYI](https://github.com/pmugabo/INGOBYI)
+Deployment
