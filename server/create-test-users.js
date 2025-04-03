@@ -22,7 +22,6 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
-// Promisify readline question
 const question = (query) => new Promise((resolve) => rl.question(query, resolve));
 
 async function createUser(userData) {
@@ -101,5 +100,4 @@ async function main() {
   }
 }
 
-// Run the script
 main();

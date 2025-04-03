@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "name": "ingobyi-backend",
+  "builds": [
+    { "src": "server.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "server.js" }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "MONGO_URI": "@ingobyi_mongo_uri",
+    "JWT_SECRET": "@ingobyi_jwt_secret"
+  }
+}

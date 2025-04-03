@@ -4,120 +4,99 @@ A full-stack web application for managing emergency medical services with real-t
 
 ## Features
 
-- **Patient Module**
-  - Request emergency assistance
-  - Real-time ambulance tracking
-  - Medical history management
-  - Insurance verification
+### Patient Module
+- Request emergency assistance
+- Real-time ambulance tracking
+- Medical history management
+- Insurance verification
 
-- **Driver Module**
-  - Accept emergency requests
-  - Real-time navigation
-  - Status updates
-  - Trip management
+### Driver Module
+- Accept emergency requests
+- Real-time navigation
+- Status updates
+- Trip management
 
-- **Insurance Module**
-  - Patient insurance verification
-  - Payment processing
-  - Claims management
-  - Coverage tracking
+### Insurance Module
+- Patient insurance verification
+- Payment processing
+- Claims management
+- Coverage tracking
 
-- **Hospital Module**
-  - Pre-admission alerts
-  - Patient status tracking
-  - Resource management
+### Hospital Module
+- Pre-admission alerts
+- Patient status tracking
+- Resource management
 
 ## Tech Stack
 
 - **Frontend**: React, Tailwind CSS, Socket.IO Client
 - **Backend**: Node.js, Express
-- **Database**: MongoDB
+- **Database**: MongoDB Atlas
 - **Real-time**: Socket.IO
 - **Maps**: Google Maps API
 - **Authentication**: JWT
+- **Deployment**: Vercel
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- MongoDB
-- Google Maps API Key
-- NPM or Yarn
+Before you begin, ensure you have met the following requirements:
 
-## Environment Variables
+- Node.js (v18 or higher)
+- npm or Yarn
+- MongoDB Atlas account
+- Google Maps API Key (optional)
+- GitHub account
+- Vercel account (for deployment)
 
-### Backend (.env)
-```
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-PORT=5000
-```
+## Local Development Setup
 
-### Frontend (.env)
-```
-REACT_APP_API_URL=http://localhost:5000
-REACT_APP_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-```
-
-## Installation
-
-1. Clone the repository
+### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/ingobyi.git
-cd ingobyi
+git clone https://github.com/pmugabo/INGOBYI.git
+cd INGOBYI
 ```
 
-2. Install backend dependencies
+### 2. Backend Setup
 ```bash
 cd server
 npm install
 ```
 
-3. Install frontend dependencies
+#### Backend Environment Variables
+Create a `.env` file in the `server` directory with:
+```
+MONGO_URI=your_mongodb_atlas_connection_string
+JWT_SECRET=your_long_random_secret
+NODE_ENV=development
+PORT=5000
+FRONTEND_URL=http://localhost:3000
+```
+
+### 3. Frontend Setup
 ```bash
 cd ../client
 npm install
 ```
 
-4. Start the development servers
-
-Backend:
-```bash
-cd server
-npm run dev
+#### Frontend Environment Variables
+Create a `.env` file in the `client` directory with:
+```
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ```
 
-Frontend:
+### 4. Run the Application
+
+#### Start Backend
 ```bash
-cd client
+cd ../server
 npm start
 ```
 
-## API Documentation
+#### Start Frontend
+```bash
+cd ../client
+npm start
+```
 
-### Authentication Routes
-- POST /api/auth/register - Register new user
-- POST /api/auth/login - Login user
-- GET /api/auth/profile - Get user profile
-
-### Emergency Routes
-- POST /api/emergency - Create emergency request
-- PUT /api/emergency/:requestId/status - Update request status
-- GET /api/emergency/:requestId - Get request details
-
-### Insurance Routes
-- POST /api/insurance/verify/:requestId - Verify insurance
-- POST /api/insurance/payment/:requestId - Process payment
-- GET /api/insurance/records - Get insurance records
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details
+Deployment
