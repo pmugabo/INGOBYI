@@ -10,14 +10,78 @@ const adminAuth = require('../middleware/adminAuth');
 // Register new user
 router.post('/register', async (req, res) => {
   try {
+    console.log('Received registration request:', req.body);
+
     const { email, password, fullName, phone, nationalId, role } = req.body;
+
+    // Validate required fields
+    if (!email || !password || !fullName || !phone || !role) {
+      console.warn('Missing required fields:', {
+        email: !!email,
+        password: !!password,
+        fullName: !!fullName,
+        phone: !!phone,
+        role: !!role
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required',
+        missingFields: [
+          !email && 'email',
+          !password && 'password', 
+          !fullName && 'fullName', 
+          !phone && 'phone', 
+          !role && 'role'
+        ].filter(Boolean)
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.warn('Invalid email format:', email);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      console.warn('Password too short:', password.length);
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long'
+      });
+    }
 
     // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {
+      console.warn('User already exists:', email);
       return res.status(400).json({
         success: false,
         message: 'User with this email already exists'
+      });
+    }
+
+    // Validate role
+    const validRoles = ['patient', 'driver', 'emt', 'hospital', 'insurance', 'admin'];
+    if (!validRoles.includes(role)) {
+      console.warn('Invalid role:', role);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role',
+        validRoles
+      });
+    }
+
+    // Require nationalId for patient role
+    if (role === 'patient' && !nationalId) {
+      console.warn('National ID required for patient role');
+      return res.status(400).json({
+        success: false,
+        message: 'National ID is required for patient registration'
       });
     }
 
@@ -32,7 +96,16 @@ router.post('/register', async (req, res) => {
       status: 'approved'
     });
 
-    await user.save();
+    try {
+      await user.save();
+    } catch (saveError) {
+      console.error('Error saving user:', saveError);
+      return res.status(500).json({
+        success: false,
+        message: 'Error creating user account',
+        details: saveError.message
+      });
+    }
 
     // Generate JWT token
     const token = jwt.sign(
@@ -55,10 +128,11 @@ router.post('/register', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Unexpected registration error:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Error creating account'
+      message: 'Unexpected error during registration',
+      details: error.message || 'Unknown error occurred'
     });
   }
 });
@@ -71,6 +145,7 @@ router.post('/login', async (req, res) => {
     // Find user
     const user = await User.findOne({ email });
     if (!user) {
+      console.warn('User not found:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -80,6 +155,7 @@ router.post('/login', async (req, res) => {
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      console.warn('Invalid password:', password);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -110,7 +186,8 @@ router.post('/login', async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Error logging in'
+      message: 'Error logging in',
+      details: error.message || 'Unknown error occurred'
     });
   }
 });
@@ -121,9 +198,11 @@ router.get('/me', auth, async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
     res.json(user);
   } catch (error) {
+    console.error('Error fetching current user:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      details: error.message || 'Unknown error occurred'
     });
   }
 });
@@ -133,6 +212,7 @@ router.get('/profile', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
+      console.warn('No token provided');
       return res.status(401).json({ message: 'No token provided' });
     }
 
@@ -140,6 +220,7 @@ router.get('/profile', async (req, res) => {
     const user = await User.findById(decoded.userId);
     
     if (!user) {
+      console.warn('User not found:', decoded.userId);
       return res.status(404).json({ message: 'User not found' });
     }
 
@@ -155,6 +236,7 @@ router.get('/profile', async (req, res) => {
   } catch (error) {
     console.error('Profile error:', error);
     if (error.name === 'JsonWebTokenError') {
+      console.warn('Invalid token:', error.message);
       return res.status(401).json({ message: 'Invalid token' });
     }
     res.status(500).json({ message: 'Error fetching profile', error: error.message });
@@ -170,9 +252,11 @@ router.get('/pending-accounts', adminAuth, async (req, res) => {
       data: pendingAccounts
     });
   } catch (error) {
+    console.error('Error fetching pending accounts:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error fetching pending accounts',
+      details: error.message || 'Unknown error occurred'
     });
   }
 });
@@ -187,9 +271,11 @@ router.put('/approve/:userId', adminAuth, async (req, res) => {
       data: user
     });
   } catch (error) {
+    console.error('Error approving account:', error);
     res.status(400).json({
       success: false,
-      message: error.message
+      message: 'Error approving account',
+      details: error.message || 'Unknown error occurred'
     });
   }
 });

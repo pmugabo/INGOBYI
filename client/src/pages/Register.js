@@ -31,20 +31,34 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      return setError('Passwords do not match');
+    // Validate form data
+    const { firstName, lastName, email, password, confirmPassword, phone, nationalId, role } = formData;
+    const validationErrors = [];
+
+    if (!firstName || !lastName) validationErrors.push('Full name is required');
+    if (!email) validationErrors.push('Email is required');
+    if (!password) validationErrors.push('Password is required');
+    if (password !== confirmPassword) validationErrors.push('Passwords do not match');
+    if (!phone) validationErrors.push('Phone number is required');
+    if (!role) validationErrors.push('Role is required');
+    if (role === 'patient' && !nationalId) validationErrors.push('National ID is required for patient registration');
+
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(', '));
+      return;
     }
 
     try {
       setLoading(true);
+      
       // Prepare user data
       const userData = {
-        fullName: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone,
-        nationalId: formData.nationalId,
-        role: formData.role
+        fullName: `${firstName} ${lastName}`, // Combine first and last name
+        email,
+        password,
+        phone,
+        nationalId: role === 'patient' ? nationalId : undefined,
+        role
       };
 
       console.log('Submitting registration with:', userData);
@@ -64,7 +78,23 @@ const Register = () => {
       }
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.response?.data?.message || 'Failed to create an account');
+      
+      // Handle specific error types
+      if (err.response && err.response.data) {
+        const errorData = err.response.data;
+        
+        // Check for specific error scenarios
+        if (errorData.missingFields) {
+          setError(`Missing fields: ${errorData.missingFields.join(', ')}`);
+        } else if (errorData.message) {
+          setError(errorData.message);
+        } else {
+          setError('Failed to create an account. Please try again.');
+        }
+      } else {
+        // Generic error handling
+        setError('Network error. Please check your connection and try again.');
+      }
     } finally {
       setLoading(false);
     }
