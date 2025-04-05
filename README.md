@@ -1,102 +1,161 @@
-# Ingobyi Emergency Management System
+# Ingobyi Emergency Management System 🚑
 
-A full-stack web application for managing emergency medical services with real-time ambulance tracking, insurance verification, and hospital coordination.
+Ingobyi is a cutting-edge emergency management platform designed to save lives and streamline emergency response in Rwanda. Our mission is to provide rapid, efficient, and coordinated emergency services.
 
-## Features
+## Key Features
 
-### Patient Module
-- Request emergency assistance
-- Real-time ambulance tracking
-- Medical history management
-- Insurance verification
-
-### Driver Module
-- Accept emergency requests
-- Real-time navigation
-- Status updates
-- Trip management
-
-### Insurance Module
-- Patient insurance verification
-- Payment processing
-- Claims management
-- Coverage tracking
-
-### Hospital Module
-- Pre-admission alerts
-- Patient status tracking
-- Resource management
+✔ Patient Emergency Requests
+✔ Real-time Driver Tracking
+✔ Hospital Pre-admission Management
+✔ Insurance Verification
+✔ Admin System Management
 
 ## Tech Stack
 
-- **Frontend**: React, Tailwind CSS, Socket.IO Client
-- **Backend**: Node.js, Express
-- **Database**: MongoDB Atlas
-- **Real-time**: Socket.IO
-- **Maps**: Google Maps API
-- **Authentication**: JWT
-- **Deployment**: Vercel
+### Frontend
+- React
+- Tailwind CSS
+- Heroicons
 
-## Prerequisites
+### Backend
+- Node.js
+- Express.js
+- Socket.IO (Real-time Updates)
 
-Before you begin, ensure you have met the following requirements:
+### Database
+- MongoDB
+- Mongoose ORM
 
-- Node.js (v18 or higher)
-- npm or Yarn
-- MongoDB Atlas account
-- Google Maps API Key (optional)
-- GitHub account
-- Vercel account (for deployment)
+### Additional Services
+- Google Maps API (Location Tracking)
+- JWT Authentication
 
-## Local Development Setup
+## Getting Started
 
-### 1. Clone the Repository
+### 1️⃣ Prerequisites
+
+Before you begin, ensure you have:
+- Node.js (v18+)
+- npm or yarn
+- MongoDB
+- Git
+
+### 2️⃣ Clone the Repository
+
 ```bash
 git clone https://github.com/pmugabo/INGOBYI.git
 cd INGOBYI
 ```
 
-### 2. Backend Setup
+### 3️⃣ Install Dependencies
+
 ```bash
+# Install backend dependencies
 cd server
 npm install
-```
 
-#### Backend Environment Variables
-Create a `.env` file in the `server` directory with:
-```
-MONGO_URI=your_mongodb_atlas_connection_string
-JWT_SECRET=your_long_random_secret
-NODE_ENV=development
-PORT=5000
-FRONTEND_URL=http://localhost:3000
-```
-
-### 3. Frontend Setup
-```bash
+# Install frontend dependencies
 cd ../client
 npm install
 ```
 
-#### Frontend Environment Variables
-Create a `.env` file in the `client` directory with:
+### 4️⃣ Environment Setup
+
+Create `.env` files in both `server` and `client` directories:
+
+#### Server `.env`
 ```
-REACT_APP_API_URL=http://localhost:5000/api
+MONGODB_URI=mongodb://localhost:27017/ingobyi
+JWT_SECRET=your_jwt_secret
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+```
+
+#### Client `.env`
+```
+REACT_APP_API_URL=http://localhost:5000
 REACT_APP_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ```
 
-### 4. Run the Application
+### 5️⃣ Database Setup
 
-#### Start Backend
 ```bash
-cd ../server
+# Start MongoDB service
+mongod
+
+# In the server directory, seed initial data (if needed)
+npm run seed
+```
+
+### 6️⃣ Run the Application
+
+```bash
+# Start backend (in server directory)
+npm run dev
+
+# Start frontend (in client directory)
 npm start
 ```
 
-#### Start Frontend
-```bash
-cd ../client
-npm start
-```
+The app will be available at `http://localhost:3000`
 
-Deployment
+## Security Features
+
+- Encrypted Passwords
+- Role-Based Access Control
+- JWT Authentication
+- Secure API Endpoints
+
+## Modules
+
+### 1. Patient Module
+- Emergency Requests
+- Real-time Tracking
+- Medical History
+
+### 2. Driver Module
+- Request Management
+- Navigation Integration
+- Status Updates
+
+### 3. Hospital Module
+- Pre-admission Processing
+- Bed Availability
+- Patient Routing
+
+### 4. Admin Module
+- User Management
+- System Analytics
+- Configuration
+
+### 5. Insurance Module
+- Real-time Verification
+- Coverage Details
+- Payment Logging
+
+## Upcoming Features
+
+- Enhanced Real-time Tracking
+- Multi-Language Support
+- Advanced Analytics Dashboard
+- Machine Learning Predictions
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+Your code could help save a life, provide critical support during emergencies, and make a real difference in our community.
+"TOGETHER, WE SAVE LIVES"
+
+## License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+## Contact
+
+Project Lead: Patricia Mugabo
+Email: p.mugabo@alustudent.com
+
