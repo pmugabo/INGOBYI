@@ -8,7 +8,6 @@ Ingobyi is a cutting-edge emergency management platform designed to save lives a
 ✔ Real-time Driver Tracking
 ✔ Hospital Pre-admission Management
 ✔ Insurance Verification
-✔ Admin System Management
 
 ## Tech Stack
 
@@ -122,12 +121,7 @@ The app will be available at `http://localhost:3000`
 - Bed Availability
 - Patient Routing
 
-### 4. Admin Module
-- User Management
-- System Analytics
-- Configuration
-
-### 5. Insurance Module
+### 4. Insurance Module
 - Real-time Verification
 - Coverage Details
 - Payment Logging
